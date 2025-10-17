@@ -1568,7 +1568,7 @@
         } else {
           try {
             await navigator.clipboard.writeText(shareText);
-            showNotification('Текст с двумя ссылками скопирован!');
+            showNotification('Ссылки для присоединения скопированы!');
           } catch (err) {
             const textArea = document.createElement('textarea');
             textArea.value = shareText;
