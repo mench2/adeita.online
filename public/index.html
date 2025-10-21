@@ -1354,6 +1354,8 @@
       let isScreenSharing = false; // Флаг демонстрации экрана
       let pendingChatText = null; // Текст, который хотели отправить до ввода имени
       let heartbeatInterval = null; // Интервал для heartbeat
+      let layoutUpdateTimeout = null; // Debounce для обновления layout
+      let participantsUpdateTimeout = null; // Debounce для обновления списка участников
 
       // Генерация уникального ID комнаты
       function generateRoomId() {
@@ -1732,25 +1734,33 @@
       
       function updateParticipantsList() {
         if (!participantsList) return; // список участников удалён — выходим
-        const totalParticipants = 1 + peers.size; // local + remote
-        participantsCount.textContent = `${totalParticipants} participant${totalParticipants !== 1 ? 's' : ''}`;
         
-        participantsList.innerHTML = '';
-        
-        // Add local participant
-        if (participantsList) {
-          const localParticipant = createParticipantItem(userName || 'Вы', true, !localStream || localStream.getAudioTracks().every(t => t.enabled));
-          participantsList.appendChild(localParticipant);
+        // Debounce обновления списка участников
+        if (participantsUpdateTimeout) {
+          clearTimeout(participantsUpdateTimeout);
         }
         
-        // Add remote participants
-        for (const [peerId, peer] of peers.entries()) {
-          const displayName = userNames.get(peerId) || `Peer ${peerId.substring(0, 8)}`;
+        participantsUpdateTimeout = setTimeout(() => {
+          const totalParticipants = 1 + peers.size; // local + remote
+          participantsCount.textContent = `${totalParticipants} participant${totalParticipants !== 1 ? 's' : ''}`;
+          
+          participantsList.innerHTML = '';
+          
+          // Add local participant
           if (participantsList) {
-            const participant = createParticipantItem(displayName, false, true);
-            participantsList.appendChild(participant);
+            const localParticipant = createParticipantItem(userName || 'Вы', true, !localStream || localStream.getAudioTracks().every(t => t.enabled));
+            participantsList.appendChild(localParticipant);
           }
-        }
+          
+          // Add remote participants
+          for (const [peerId, peer] of peers.entries()) {
+            const displayName = userNames.get(peerId) || `Peer ${peerId.substring(0, 8)}`;
+            if (participantsList) {
+              const participant = createParticipantItem(displayName, false, true);
+              participantsList.appendChild(participant);
+            }
+          }
+        }, 50); // 50ms debounce
       }
       
       function createParticipantItem(name, isLocal, isUnmuted) {
@@ -1806,26 +1816,33 @@
       }
 
       function updateVideoGridLayout() {
-        // фиксированная раскладка 2x2 + плейсхолдеры до 4 ячеек
-        videosGrid.className = 'videos-grid';
-        // Удаляем ВСЕ ранее добавленные плейсхолдеры и случайный локальный аватар
-        [...videosGrid.querySelectorAll('.video-container.placeholder')].forEach(n => n.remove());
-        const localContainer = videosGrid.querySelector('.video-container.local-video');
-        if (localContainer) {
-          localContainer.classList.remove('placeholder');
-          const localAv = localContainer.querySelector('#localAvatar');
-          if (localAv) localAv.remove();
+        // Debounce обновления layout для избежания множественных пересчетов
+        if (layoutUpdateTimeout) {
+          clearTimeout(layoutUpdateTimeout);
         }
-        // Сколько ячеек занято реальным видео
-        const realTiles = videosGrid.querySelectorAll('.video-container').length;
-        const placeholdersToAdd = Math.max(0, 4 - realTiles);
-        for (let i = 0; i < placeholdersToAdd; i++) {
-          const ph = document.createElement('div');
-          ph.className = 'video-container placeholder';
-          videosGrid.appendChild(ph);
-        }
-        // после изменения состава пересчитываем размер тайла
-        recalcTileSize();
+        
+        layoutUpdateTimeout = setTimeout(() => {
+          // фиксированная раскладка 2x2 + плейсхолдеры до 4 ячеек
+          videosGrid.className = 'videos-grid';
+          // Удаляем ВСЕ ранее добавленные плейсхолдеры и случайный локальный аватар
+          [...videosGrid.querySelectorAll('.video-container.placeholder')].forEach(n => n.remove());
+          const localContainer = videosGrid.querySelector('.video-container.local-video');
+          if (localContainer) {
+            localContainer.classList.remove('placeholder');
+            const localAv = localContainer.querySelector('#localAvatar');
+            if (localAv) localAv.remove();
+          }
+          // Сколько ячеек занято реальным видео
+          const realTiles = videosGrid.querySelectorAll('.video-container').length;
+          const placeholdersToAdd = Math.max(0, 4 - realTiles);
+          for (let i = 0; i < placeholdersToAdd; i++) {
+            const ph = document.createElement('div');
+            ph.className = 'video-container placeholder';
+            videosGrid.appendChild(ph);
+          }
+          // после изменения состава пересчитываем размер тайла
+          recalcTileSize();
+        }, 100); // 100ms debounce
       }
 
       // Динамический расчёт размера тайла по фактическим размерам контейнера
@@ -1936,6 +1953,36 @@
 
       async function getLocalStream(quality = 'medium') {
         try {
+          // Адаптивное качество в зависимости от количества участников
+          const participantCount = 1 + peers.size; // включая себя
+          let videoConstraints;
+          
+          if (participantCount >= 4) {
+            // Для 4+ участников - низкое качество
+            videoConstraints = {
+              width: { ideal: 480, max: 640 },
+              height: { ideal: 360, max: 480 },
+              frameRate: { ideal: 15, max: 20 },
+              facingMode: { ideal: 'user' }
+            };
+          } else if (participantCount >= 3) {
+            // Для 3 участников - среднее качество
+            videoConstraints = {
+              width: { ideal: 640, max: 800 },
+              height: { ideal: 480, max: 600 },
+              frameRate: { ideal: 20, max: 25 },
+              facingMode: { ideal: 'user' }
+            };
+          } else {
+            // Для 1-2 участников - высокое качество
+            videoConstraints = {
+              width: { ideal: 1280, max: 1920 },
+              height: { ideal: 720, max: 1080 },
+              frameRate: { ideal: 30, max: 30 },
+              facingMode: { ideal: 'user' }
+            };
+          }
+          
           // Платформо-специфичные констрейнты
           let constraints = {
             audio: {
@@ -1945,12 +1992,7 @@
               sampleRate: 48000,
               channelCount: 1
             },
-            video: {
-              width: { ideal: 1280, max: 1920 },
-              height: { ideal: 720, max: 1080 },
-              frameRate: { ideal: 30, max: 30 },
-              facingMode: { ideal: 'user' }
-            }
+            video: videoConstraints
           };
 
           // Специальные настройки для iOS/Safari
@@ -2063,6 +2105,62 @@
 
       // Обновление качества видео для всех пиров
       function updateVideoQualityForAllPeers() { /* упрощено: без динамики */ }
+      
+      // Адаптивное обновление качества видео в зависимости от количества участников
+      async function updateVideoQualityForParticipantCount() {
+        const participantCount = 1 + peers.size;
+        
+        // Если у нас уже есть локальный стрим, обновляем его качество
+        if (localStream && participantCount >= 3) {
+          try {
+            console.log(`Updating video quality for ${participantCount} participants`);
+            
+            // Получаем новый стрим с адаптивным качеством
+            const newStream = await navigator.mediaDevices.getUserMedia({
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+                sampleRate: 48000,
+                channelCount: 1
+              },
+              video: participantCount >= 4 ? {
+                width: { ideal: 480, max: 640 },
+                height: { ideal: 360, max: 480 },
+                frameRate: { ideal: 15, max: 20 },
+                facingMode: { ideal: 'user' }
+              } : {
+                width: { ideal: 640, max: 800 },
+                height: { ideal: 480, max: 600 },
+                frameRate: { ideal: 20, max: 25 },
+                facingMode: { ideal: 'user' }
+              }
+            });
+            
+            // Заменяем треки во всех соединениях
+            for (const [peerId, peer] of peers.entries()) {
+              const videoSender = peer.pc.getSenders().find(s => s.track && s.track.kind === 'video');
+              const audioSender = peer.pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+              
+              if (videoSender && newStream.getVideoTracks()[0]) {
+                await videoSender.replaceTrack(newStream.getVideoTracks()[0]);
+              }
+              if (audioSender && newStream.getAudioTracks()[0]) {
+                await audioSender.replaceTrack(newStream.getAudioTracks()[0]);
+              }
+            }
+            
+            // Останавливаем старый стрим и устанавливаем новый
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = newStream;
+            localVideo.srcObject = localStream;
+            
+            console.log(`Video quality updated for ${participantCount} participants`);
+          } catch (error) {
+            console.warn('Failed to update video quality:', error);
+          }
+        }
+      }
 
       // Адаптивное изменение качества на основе статистики соединения
       function adaptVideoQuality(peerId) { /* упразднено */ }
@@ -2144,18 +2242,29 @@
       }
 
       function createPeerConnection(peerId) {
+        // Адаптивная конфигурация WebRTC в зависимости от количества участников
+        const participantCount = 1 + peers.size;
+        let iceCandidatePoolSize = 10;
+        
+        // Уменьшаем количество ICE кандидатов для множественных соединений
+        if (participantCount >= 4) {
+          iceCandidatePoolSize = 3; // Минимум для 4+ участников
+        } else if (participantCount >= 3) {
+          iceCandidatePoolSize = 5; // Среднее для 3 участников
+        }
+        
         // Платформо-специфичная конфигурация WebRTC
         let config = {
           iceServers: [...stunServers],
-          iceCandidatePoolSize: 10,
+          iceCandidatePoolSize: iceCandidatePoolSize,
           bundlePolicy: 'max-bundle',
           rtcpMuxPolicy: 'require',
           iceTransportPolicy: 'all',
-          iceConnectionReceivingTimeout: 20000,
+          iceConnectionReceivingTimeout: participantCount >= 4 ? 15000 : 20000,
           iceBackupCandidatePairPingInterval: 2000,
-          continualGatheringPolicy: 'gather_continually',
+          continualGatheringPolicy: participantCount >= 4 ? 'gather_once' : 'gather_continually',
           sdpSemantics: 'unified-plan',
-          iceGatheringTimeout: 15000
+          iceGatheringTimeout: participantCount >= 4 ? 10000 : 15000
         };
 
         // Специальные настройки для iOS/Safari
@@ -2301,6 +2410,10 @@
         
         updateVideoGridLayout();
         updateParticipantsList();
+        
+        // Обновляем качество видео при добавлении участника
+        updateVideoQualityForParticipantCount();
+        
         console.log(`Peer ${peerId} added successfully, total peers: ${peers.size}`);
       }
 
@@ -2323,6 +2436,9 @@
           removeRemoteVideoElement(peerId);
           updateVideoGridLayout();
           updateParticipantsList();
+          
+          // Обновляем качество видео при удалении участника
+          updateVideoQualityForParticipantCount();
           
           // Немедленно обновляем счетчик участников
           updateHeaderCounts();
