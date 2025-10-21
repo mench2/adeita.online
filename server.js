@@ -9,6 +9,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+// Доверяем Cloudflare как прокси
+app.set('trust proxy', true);
+
+// Middleware для логирования реального IP
+app.use((req, res, next) => {
+  const realIP = req.headers['cf-connecting-ip'] || req.ip;
+  if (process.env.VERBOSE_LOGS === 'true') {
+    console.log('Real user IP:', realIP);
+  }
+  next();
+});
 // Разрешаем использование камеры/микрофона в webview (Permissions-Policy)
 app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self)');
@@ -18,15 +29,24 @@ app.use((req, res, next) => {
 const server = http.createServer(app);
 const VERBOSE_LOGS = process.env.VERBOSE_LOGS === '1' || process.env.VERBOSE_LOGS === 'true';
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] }
+  cors: { origin: '*', methods: ['GET', 'POST'] },
+  pingTimeout: 2000, // ОЧЕНЬ быстрое обнаружение (2 секунды)
+  pingInterval: 1000, // ОЧЕНЬ частая проверка (1 секунда)
+  transports: ['websocket', 'polling'], // Поддерживаем оба транспорта
+  allowEIO3: true, // Совместимость с старыми версиями
+  upgradeTimeout: 1000, // Быстрое обновление соединения
+  maxHttpBufferSize: 1e6 // Увеличиваем буфер для быстрой передачи
 });
 
 // simple in-memory rooms map: roomId -> Set(socketId)
 const roomIdToSocketIds = new Map();
 // Map для хранения имен пользователей: socketId -> userName
 const socketIdToUserName = new Map();
-// Map для отслеживания активности пользователей: socketId -> { lastActivity, messageCount, joinTime }
+// Map для отслеживания активности пользователей: socketId -> { lastActivity, messageCount, joinTime, lastPing }
 const userActivity = new Map();
+// Интервал для проверки неактивных пользователей
+const INACTIVITY_CHECK_INTERVAL = 2000; // 2 секунды (ОЧЕНЬ часто)
+const MAX_INACTIVITY_TIME = 5000; // 5 секунд (МАКСИМАЛЬНО агрессивно)
 // Настройки защиты от ботов
 const BOT_PROTECTION = {
   MAX_MESSAGES_PER_MINUTE: 10, // Максимум сообщений в минуту
@@ -42,7 +62,8 @@ function initializeUserActivity(socketId) {
     lastActivity: Date.now(),
     messageCount: 0,
     joinTime: Date.now(),
-    roomJoins: 0
+    roomJoins: 0,
+    lastPing: Date.now()
   });
 }
 
@@ -50,6 +71,40 @@ function updateUserActivity(socketId) {
   const activity = userActivity.get(socketId);
   if (activity) {
     activity.lastActivity = Date.now();
+    activity.lastPing = Date.now();
+  }
+}
+
+// Функция для проверки неактивных пользователей
+function checkInactiveUsers() {
+  const now = Date.now();
+  const inactiveUsers = [];
+  
+  for (const [socketId, activity] of userActivity.entries()) {
+    if (now - activity.lastPing > MAX_INACTIVITY_TIME) {
+      inactiveUsers.push(socketId);
+    }
+  }
+  
+  // Удаляем неактивных пользователей
+  for (const socketId of inactiveUsers) {
+    if (VERBOSE_LOGS) console.log(`Removing inactive user: ${socketId}`);
+    
+    // Находим комнату пользователя и уведомляем остальных
+    for (const [roomId, peers] of roomIdToSocketIds.entries()) {
+      if (peers.has(socketId)) {
+        peers.delete(socketId);
+        io.to(roomId).emit('peer-left', { socketId: socketId });
+        if (peers.size === 0) {
+          roomIdToSocketIds.delete(roomId);
+        }
+        break;
+      }
+    }
+    
+    // Очищаем данные пользователя
+    userActivity.delete(socketId);
+    socketIdToUserName.delete(socketId);
   }
 }
 
@@ -139,6 +194,12 @@ io.on('connection', (socket) => {
   
   // Инициализируем активность пользователя
   initializeUserActivity(socket.id);
+  
+  // Обработчик ping для отслеживания активности
+  socket.on('ping', () => {
+    updateUserActivity(socket.id);
+    socket.emit('pong');
+  });
 
   socket.on('join', (roomId) => {
     if (VERBOSE_LOGS) console.log(`Socket ${socket.id} joining room ${roomId}`);
@@ -189,18 +250,26 @@ io.on('connection', (socket) => {
     if (currentRoomId === roomId) currentRoomId = null;
   });
 
-  socket.on('disconnect', () => {
-    if (VERBOSE_LOGS) console.log(`Socket ${socket.id} disconnected`);
+  socket.on('disconnect', (reason) => {
+    if (VERBOSE_LOGS) console.log(`Socket ${socket.id} disconnected, reason: ${reason}`);
+    
+    // Немедленно уведомляем всех в комнате о выходе пользователя
     if (currentRoomId) {
       const peers = roomIdToSocketIds.get(currentRoomId);
       if (peers) {
         peers.delete(socket.id);
+        // Отправляем уведомление о выходе всем участникам комнаты
         socket.to(currentRoomId).emit('peer-left', { socketId: socket.id });
-        if (peers.size === 0) roomIdToSocketIds.delete(currentRoomId);
+        if (peers.size === 0) {
+          roomIdToSocketIds.delete(currentRoomId);
+          if (VERBOSE_LOGS) console.log(`Room ${currentRoomId} is now empty, deleting`);
+        }
       }
     }
-    // Очищаем имя пользователя при отключении
+    
+    // Очищаем все данные пользователя
     socketIdToUserName.delete(socket.id);
+    userActivity.delete(socket.id);
   });
 
   socket.on('signal', ({ to, data }) => {
@@ -260,6 +329,9 @@ io.on('connection', (socket) => {
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Запускаем интервал проверки неактивных пользователей
+setInterval(checkInactiveUsers, INACTIVITY_CHECK_INTERVAL);
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

@@ -1353,6 +1353,7 @@
       let screenStream = null; // Поток демонстрации экрана
       let isScreenSharing = false; // Флаг демонстрации экрана
       let pendingChatText = null; // Текст, который хотели отправить до ввода имени
+      let heartbeatInterval = null; // Интервал для heartbeat
 
       // Генерация уникального ID комнаты
       function generateRoomId() {
@@ -1362,6 +1363,26 @@
           result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         return result;
+      }
+
+      // Функции для heartbeat
+      function startHeartbeat() {
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval);
+        }
+        
+        heartbeatInterval = setInterval(() => {
+          if (socket.connected) {
+            socket.emit('ping');
+          }
+        }, 1000); // Отправляем ping каждую секунду для МАКСИМАЛЬНОЙ скорости
+      }
+
+      function stopHeartbeat() {
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval);
+          heartbeatInterval = null;
+        }
       }
 
       // Убрана генерация случайного имени пользователя
@@ -2178,10 +2199,10 @@
             const av = document.querySelector(`#video-${peerId} .avatar`);
             if (av) av.remove();
           }
-          // Если трек завершился (peer ушёл/свернул), быстро убираем видео
+          // МГНОВЕННОЕ удаление при окончании трека
           if (e.track) {
             e.track.onended = () => {
-              console.log(`Track ended for ${peerId}, removing peer`);
+              console.log(`INSTANT REMOVAL: Track ended for ${peerId}`);
               removePeer(peerId);
             };
           }
@@ -2213,13 +2234,9 @@
             }, 3000);
           } else if (pc.connectionState === 'disconnected') {
             console.warn(`WebRTC connection disconnected with ${peerId}`);
-            // Даем время на восстановление
-            setTimeout(() => {
-              if (peers.has(peerId) && peer.pc.connectionState === 'disconnected') {
-                console.log(`Connection still disconnected with ${peerId}, removing peer`);
-                removePeer(peerId);
-              }
-            }, 5000);
+            // МГНОВЕННОЕ удаление при разрыве WebRTC соединения
+            console.log(`INSTANT REMOVAL: WebRTC disconnected with ${peerId}`);
+            removePeer(peerId);
           }
         };
         
@@ -2227,30 +2244,14 @@
           console.log(`pc.iceConnectionState with ${peerId}:`, pc.iceConnectionState);
           if (pc.iceConnectionState === 'failed') {
             console.error(`ICE connection failed for ${peerId}`);
-            // Попробуем перезапустить ICE
-            pc.restartIce();
-            // И подстрахуемся удалением, если не восстановится
-            const ref = peers.get(peerId);
-            if (ref && !ref._disconnectTimer) {
-              ref._disconnectTimer = setTimeout(() => {
-                if (peers.has(peerId) && ref.pc.iceConnectionState !== 'connected') {
-                  console.warn(`Removing peer ${peerId} after ICE failed timeout`);
-                  removePeer(peerId);
-                }
-              }, 3000);
-            }
+            // МГНОВЕННОЕ удаление при неудаче ICE
+            console.log(`INSTANT REMOVAL: ICE failed with ${peerId}`);
+            removePeer(peerId);
           }
           if (pc.iceConnectionState === 'disconnected') {
-            // Даём немного времени на восстановление, затем убираем
-            const ref = peers.get(peerId);
-            if (ref && !ref._disconnectTimer) {
-              ref._disconnectTimer = setTimeout(() => {
-                if (peers.has(peerId) && ref.pc.iceConnectionState !== 'connected') {
-                  console.warn(`Removing peer ${peerId} after disconnected timeout`);
-                  removePeer(peerId);
-                }
-              }, 3000);
-            }
+            // МГНОВЕННОЕ удаление при разрыве ICE соединения
+            console.log(`INSTANT REMOVAL: ICE disconnected with ${peerId}`);
+            removePeer(peerId);
           }
           if (pc.iceConnectionState === 'connected') {
             const ref = peers.get(peerId);
@@ -2311,11 +2312,20 @@
             clearInterval(peer.qualityInterval);
           }
           
-          peer.pc.close();
+          // Принудительно закрываем соединение
+          try {
+            peer.pc.close();
+          } catch (e) {
+            console.warn('Error closing peer connection:', e);
+          }
+          
           peers.delete(peerId);
           removeRemoteVideoElement(peerId);
           updateVideoGridLayout();
           updateParticipantsList();
+          
+          // Немедленно обновляем счетчик участников
+          updateHeaderCounts();
         }
       }
 
@@ -2451,6 +2461,12 @@
       function hangup() {
         showProgress(true);
         
+        // Сразу уведомляем сервер о выходе из комнаты
+        if (roomId) {
+          socket.emit('leave', roomId);
+          console.log('Explicitly left room:', roomId);
+        }
+        
         // Специальная обработка для iOS - правильное завершение медиа-стрима
         if (IS_IOS || IS_SAFARI) {
           console.log('iOS/Safari detected - using special cleanup for microphone');
@@ -2529,6 +2545,9 @@
         chatMessages = [];
         userNames.clear();
         isScreenSharing = false;
+        
+        // Останавливаем heartbeat
+        stopHeartbeat();
         
         showControls(false);
         clearError();
@@ -2609,10 +2628,16 @@
       socket.on('connect', () => {
         clearError();
         console.log('Connected to signaling server');
+        
+        // Запускаем heartbeat для поддержания соединения
+        startHeartbeat();
       });
       socket.on('disconnect', () => {
         showControls(false);
         console.log('Disconnected from signaling server');
+        
+        // Останавливаем heartbeat при отключении
+        stopHeartbeat();
       });
       socket.on('connect_error', (err) => { 
         showError('Failed to connect to signaling server');
@@ -2650,6 +2675,9 @@
         console.log('Peer left:', socketId);
         userNames.delete(socketId);
         removePeer(socketId);
+        
+        // Немедленно обновляем счетчик участников
+        updateHeaderCounts();
       });
       
       socket.on('user-name-set', ({ socketId, userName: peerUserName }) => {
@@ -2673,6 +2701,12 @@
       });
       
       socket.on('signal', handleSignal);
+      
+      // Обработчик pong для подтверждения активности
+      socket.on('pong', () => {
+        // Просто подтверждаем, что сервер получил наш ping
+        if (VERBOSE_LOGS) console.log('Received pong from server');
+      });
 
       /* remove dead leaveRoom (несуществующие joinBtn/roomIdInput) */
 
@@ -2821,6 +2855,24 @@
       chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
           sendChatMessage();
+        }
+      });
+
+      // Обработка закрытия страницы/вкладки
+      window.addEventListener('beforeunload', () => {
+        // Уведомляем сервер о выходе перед закрытием страницы
+        if (roomId && socket.connected) {
+          socket.emit('leave', roomId);
+          // Принудительно отправляем данные (не ждем подтверждения)
+          socket.emit('disconnect');
+        }
+      });
+
+      // Обработка потери фокуса (пользователь переключился на другую вкладку)
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden && roomId && socket.connected) {
+          // Отправляем ping чтобы сервер знал что мы еще живы
+          socket.emit('ping');
         }
       });
 
