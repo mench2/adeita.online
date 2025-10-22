@@ -52,6 +52,12 @@
         min-height: 100vh;
         color: #ffffff;
         overflow: hidden;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      body.loaded {
+        opacity: 1;
       }
 
       /* Ограничения для Telegram WebApp — включаем через класс на <html> */
@@ -1156,7 +1162,7 @@
     </style>
   </head>
   <body>
-    <div class="preloader" id="preloader" style="display:none">
+    <div class="preloader" id="preloader">
       <div class="logo">Adeita Vichat</div>
       <div class="spinner"></div>
     </div>
@@ -2991,7 +2997,11 @@
         }
         updateVideoGridLayout();
         // снимем прелоадер через тик — DOM готов
-        setTimeout(() => showProgress(false), 100);
+        setTimeout(() => {
+          showProgress(false);
+          // Показываем контент после инициализации
+          document.body.classList.add('loaded');
+        }, 100);
         recalcTileSize();
         window.addEventListener('resize', recalcTileSize);
 
