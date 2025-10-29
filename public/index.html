@@ -62,10 +62,18 @@
 
       /* Ограничения для Telegram WebApp — включаем через класс на <html> */
       .tg-webapp { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
-      .tg-webapp * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-user-drag: none; }
+      .tg-webapp * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0,0,0,0); }
       .tg-webapp a, .tg-webapp img { -webkit-user-drag: none; }
+      .tg-webapp ::selection { background: transparent; }
       /* Разрешаем выделение текста в инпутах и текстовых областях */
       .tg-webapp input, .tg-webapp textarea { -webkit-user-select: text; user-select: text; }
+
+      /* Глобальный режим «как приложение» вне Telegram */
+      .app-shell { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+      .app-shell * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+      .app-shell a, .app-shell img { -webkit-user-drag: none; }
+      .app-shell ::selection { background: transparent; }
+      .app-shell input, .app-shell textarea { -webkit-user-select: text; user-select: text; }
       
       .wrap { 
         width: 100vw; 
@@ -726,6 +734,41 @@
   background: #4B2C36;
       }
       .control-btn.round svg { width: 28px; height: 28px; }
+
+      /* Поповер для копирования ссылок */
+      .copy-popover {
+        position: fixed;
+        z-index: 1200;
+        background: #d0f9bb;
+        color: #345d2f;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+        border-radius: 28px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        opacity: 0;
+        transform: translateY(6px) scale(0.98);
+        transition: opacity .18s ease, transform .18s ease;
+        pointer-events: none;
+      }
+      .copy-popover.show { opacity: 1; transform: translateY(0); }
+      .copy-popover .check {
+        width: 18px; height: 18px; border-radius: 50%;
+        background: #345d2f; display: inline-flex; align-items: center; justify-content: center;
+        color: #d0f9bb; font-weight: 900; font-size: 12px;
+      }
+      .copy-popover .label { font-size: 14px; font-weight: 700; }
+
+      /* Вариант: тост по центру снизу */
+      .copy-popover.pill-toast { 
+        top: auto; right: auto; 
+        left: 50%; bottom: 110px; 
+        transform: translateX(-50%) translateY(6px) scale(0.98);
+      }
+      .copy-popover.pill-toast.show { transform: translateX(-50%) translateY(0) scale(1); }
 
       .control-btn.text-pill {
   min-width: 150px;
@@ -1394,8 +1437,6 @@
         }
       }
 
-      // Убрана генерация случайного имени пользователя
-
       // Показать модальное окно для ввода имени
       function showNameModal() {
         // На мобильных имя не спрашиваем вообще
@@ -1557,7 +1598,7 @@
             if (textEl) textEl.textContent = 'Stop';
           }
           
-          showNotification('Демонстрация экрана начата');
+          
           
         } catch (error) {
           console.error('Error starting screen share:', error);
@@ -1595,7 +1636,7 @@
             if (textEl) textEl.textContent = 'Trans';
           }
           
-          showNotification('Демонстрация экрана остановлена');
+          
           
         } catch (error) {
           console.error('Error stopping screen share:', error);
@@ -1621,7 +1662,7 @@
         } else {
           try {
             await navigator.clipboard.writeText(shareText);
-            showNotification('Ссылки для присоединения скопированы!');
+            showNotification('Скопировано');
           } catch (err) {
             const textArea = document.createElement('textarea');
             textArea.value = shareText;
@@ -1629,55 +1670,38 @@
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-            showNotification('Текст с двумя ссылками скопирован!');
+            showNotification('Скопировано');
           }
         }
       }
 
-      // Показ уведомления
-      function showNotification(message) {
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: var(--m3-primary);
-          color: white;
-          padding: 12px 20px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          z-index: 1000;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          animation: slideIn 0.3s ease;
-        `;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
+      // Единый тост: если открыта модалка имени — не показываем; якорим над панелью управления
+      function showNotification(message = '') {
+        const nameModalEl = document.getElementById('nameModal');
+        if (nameModalEl) {
+          const modalVisible = getComputedStyle(nameModalEl).display !== 'none' && nameModalEl.offsetParent !== null;
+          if (modalVisible) return;
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'copy-popover';
+        toast.innerHTML = `<div class="check">✓</div><div class="label">${message}</div>`;
+        document.body.appendChild(toast);
+
+        const controls = document.getElementById('callControls');
+        const controlsRect = controls ? controls.getBoundingClientRect() : null;
+        const toastRect = toast.getBoundingClientRect();
+        const left = Math.max(8, (window.innerWidth - toastRect.width) / 2);
+        const top = controlsRect ? Math.max(8, controlsRect.top - 16 - toastRect.height)
+                                 : Math.max(8, window.innerHeight - 110 - toastRect.height);
+        toast.style.left = left + 'px';
+        toast.style.top = top + 'px';
+
+        requestAnimationFrame(() => toast.classList.add('show'));
         setTimeout(() => {
-          notification.style.animation = 'slideOut 0.3s ease';
-          setTimeout(() => notification.remove(), 300);
-        }, 2000);
-      }
-
-      // Добавляем CSS для анимации уведомлений
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes slideIn {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-          from { transform: translateX(0); opacity: 1; }
-          to { transform: translateX(100%); opacity: 0; }
-        }
-      `;
-      document.head.appendChild(style);
-
-      // Убран status-индикатор; оставляем только обновление заголовка/счётчика при необходимости
-      function updateHeaderCounts() {
-        if (roomId) roomTitle.textContent = `Room ${roomId}`; else roomTitle.textContent = 'Adeita Vichat';
-        participantsCount.textContent = `${1 + peers.size} participant${1 + peers.size !== 1 ? 's' : ''}`;
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 150);
+        }, 1800);
       }
 
       // Включаем ограничения поведения только в Telegram WebApp, чтобы не ломать обычный браузер
@@ -1717,6 +1741,18 @@
           if (tag !== 'input' && tag !== 'textarea') e.preventDefault();
         });
         // Пресекаем drag на элементах (картинки/линки)
+        document.addEventListener('dragstart', (e) => e.preventDefault());
+      } else {
+        // В браузере включаем «app-like» ограничения
+        document.documentElement.classList.add('app-shell');
+        // Блокируем контекстное меню/лонг-пресс
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+        // Разрешаем выделение только в инпутах/текстовых полях
+        document.addEventListener('selectstart', (e) => {
+          const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+          if (tag !== 'input' && tag !== 'textarea') e.preventDefault();
+        });
+        // Запрещаем drag элементов (картинки/ссылки)
         document.addEventListener('dragstart', (e) => e.preventDefault());
       }
 
