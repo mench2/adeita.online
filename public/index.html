@@ -2221,34 +2221,194 @@
           localStream = newStream;
           localVideo.srcObject = localStream;
           updateButtonStates();
+          // Перекладываем режим фонарика под новую камеру
+          await updateFlashlightForCurrentFacing();
         } catch (e) {
           showNotification('Не удалось переключить камеру');
           console.warn(e);
         }
       }
 
-      // Фонарик для подсветки лица - белый фон
+      // Фонарик: реальный torch (если доступен) + фолбэк белым фоном
       let flashlightEnabled = false;
-      
-      function toggleFlashlight() {
+      let torchStream = null;
+      let torchTrack = null;
+      let torchVideoEl = null; // для iOS/Safari нужно «играющее» видео
+
+      async function ensureTorchTrack() {
+        // уже готово
+        if (torchTrack && torchStream) {
+          try {
+            const caps = torchTrack.getCapabilities?.();
+            if (caps && 'torch' in caps) return true;
+          } catch (_) { /* noop */ }
+        }
+
+        // Пытаемся открыть отдельный стрим с задней камеры с минимальным качеством
+        try {
+          // Если камера уже занята системой/браузером — это может упасть
+          const req = {
+            audio: false,
+            video: {
+              facingMode: { exact: 'environment' },
+              width: { ideal: 160, max: 320 },
+              height: { ideal: 120, max: 240 },
+              frameRate: { ideal: 5, max: 10 },
+              advanced: [{ torch: false }]
+            }
+          };
+          const stream = await navigator.mediaDevices.getUserMedia(req);
+          const track = stream.getVideoTracks()[0];
+          const caps = track.getCapabilities?.();
+          if (!caps || !('torch' in caps)) {
+            // нет поддержки — чистим и сообщаем
+            stream.getTracks().forEach(t => t.stop());
+            return false;
+          }
+
+          // iOS/Safari: трек должен реально воспроизводиться
+          if (!torchVideoEl) {
+            torchVideoEl = document.createElement('video');
+            torchVideoEl.muted = true;
+            torchVideoEl.playsInline = true;
+            torchVideoEl.setAttribute('playsinline', '');
+            torchVideoEl.style.position = 'fixed';
+            torchVideoEl.style.width = '1px';
+            torchVideoEl.style.height = '1px';
+            torchVideoEl.style.opacity = '0';
+            torchVideoEl.style.pointerEvents = 'none';
+            document.body.appendChild(torchVideoEl);
+          }
+          torchVideoEl.srcObject = stream;
+          try { await torchVideoEl.play(); } catch (_) { /* ignore */ }
+
+          torchStream = stream;
+          torchTrack = track;
+          return true;
+        } catch (err) {
+          console.warn('ensureTorchTrack failed:', err);
+          return false;
+        }
+      }
+
+      function getCurrentVideoTrack() {
+        try { return localStream && localStream.getVideoTracks()[0]; } catch (_) { return null; }
+      }
+
+      async function enableTorchOnCurrentTrack() {
+        const track = getCurrentVideoTrack();
+        if (!track) return false;
+        try {
+          const caps = track.getCapabilities?.();
+          if (!caps || !('torch' in caps)) return false;
+          await track.applyConstraints({ advanced: [{ torch: true }] });
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }
+
+      async function disableTorchOnCurrentTrack() {
+        const track = getCurrentVideoTrack();
+        if (!track) return false;
+        try {
+          const caps = track.getCapabilities?.();
+          if (!caps || !('torch' in caps)) return false;
+          await track.applyConstraints({ advanced: [{ torch: false }] });
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function getCurrentFacing() {
+        try { return getCurrentVideoTrack()?.getSettings()?.facingMode || null; } catch (_) { return null; }
+      }
+
+      async function updateFlashlightForCurrentFacing() {
+        if (!flashlightEnabled) return;
+        const facing = getCurrentFacing();
+        if (facing === 'environment') {
+          // пробуем реальный torch на текущем треке, иначе отдельный стрим, иначе белый фон
+          let ok = await enableTorchOnCurrentTrack();
+          if (!ok) ok = await enableRealTorch();
+          if (ok) {
+            fallbackWhiteBg(false);
+          } else {
+            fallbackWhiteBg(true);
+          }
+        } else {
+          // фронталка — торч не нужен, белый фон
+          await disableTorchOnCurrentTrack();
+          await disableRealTorch();
+          fallbackWhiteBg(true);
+        }
+      }
+
+      function fallbackWhiteBg(on) {
+        const videoSection = document.querySelector('.video-section');
+        if (on) {
+          if (videoSection) videoSection.classList.add('flashlight-on');
+          document.body.classList.add('flashlight-bg');
+          const wrap = document.querySelector('.wrap');
+          if (wrap) wrap.classList.add('flashlight-bg');
+        } else {
+          if (videoSection) videoSection.classList.remove('flashlight-on');
+          document.body.classList.remove('flashlight-bg');
+          const wrap = document.querySelector('.wrap');
+          if (wrap) wrap.classList.remove('flashlight-bg');
+        }
+      }
+
+      async function enableRealTorch() {
+        const ok = await ensureTorchTrack();
+        if (!ok) return false;
+        try {
+          await torchTrack.applyConstraints({ advanced: [{ torch: true }] });
+          return true;
+        } catch (e) {
+          console.warn('torch on failed:', e);
+          return false;
+        }
+      }
+
+      async function disableRealTorch() {
+        if (!torchTrack) return;
+        try { await torchTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch (_) { /* noop */ }
+        // Освобождаем ресурсы, чтобы не держать вторую камеру
+        try {
+          if (torchStream) torchStream.getTracks().forEach(t => t.stop());
+        } catch (_) { /* noop */ }
+        torchStream = null;
+        torchTrack = null;
+        if (torchVideoEl) {
+          try { torchVideoEl.pause(); } catch (_) { /* noop */ }
+          torchVideoEl.srcObject = null;
+          if (torchVideoEl.parentNode) torchVideoEl.parentNode.removeChild(torchVideoEl);
+          torchVideoEl = null;
+        }
+      }
+
+      async function toggleFlashlight() {
         try {
           if (flashlightEnabled) {
-            // Выключаем фонарик - убираем белый фон
-            const videoSection = document.querySelector('.video-section');
-            if (videoSection) videoSection.classList.remove('flashlight-on');
-            document.body.classList.remove('flashlight-bg');
-            const wrap = document.querySelector('.wrap');
-            if (wrap) wrap.classList.remove('flashlight-bg');
+            // выключаем
+            await disableTorchOnCurrentTrack();
+            await disableRealTorch();
+            fallbackWhiteBg(false);
             flashlightEnabled = false;
             document.getElementById('flashlightText').textContent = 'ON';
             document.getElementById('flashlightToggle').classList.remove('active');
           } else {
-            // Включаем фонарик - делаем фон белым
-            const videoSection = document.querySelector('.video-section');
-            if (videoSection) videoSection.classList.add('flashlight-on');
-            document.body.classList.add('flashlight-bg');
-            const wrap = document.querySelector('.wrap');
-            if (wrap) wrap.classList.add('flashlight-bg');
+            // Включаем согласно текущей камере
+            const facing = getCurrentFacing();
+            if (facing === 'environment') {
+              let ok = await enableTorchOnCurrentTrack();
+              if (!ok) ok = await ensureTorchTrack() && await enableRealTorch();
+              if (!ok) fallbackWhiteBg(true); else fallbackWhiteBg(false);
+            } else {
+              fallbackWhiteBg(true);
+            }
             flashlightEnabled = true;
             document.getElementById('flashlightText').textContent = 'OFF';
             document.getElementById('flashlightToggle').classList.add('active');
@@ -2724,6 +2884,7 @@
         
         // Гарантированно выключаем фонарик
         try {
+          if (typeof disableRealTorch === 'function') { disableRealTorch(); }
           const videoSection = document.querySelector('.video-section');
           if (videoSection) videoSection.classList.remove('flashlight-on');
           document.body.classList.remove('flashlight-bg');
