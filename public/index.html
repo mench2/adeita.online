@@ -446,41 +446,24 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        /* квадратные плитки */
         aspect-ratio: 1 / 1;
         transition: border-color 0.3s ease;
       }
 
       /* --- СЕРЫЙ КВАДРАТ ДЛЯ ЛОКАЛЬНОГО ВИДЕО ДО ПОДКЛЮЧЕНИЯ --- */
 .video-container.local-video {
-  background: #0f0f0f; /* такой же как placeholder */
+  background: transparent; /* такой же как placeholder */
   border: 2px dashed #2a2a2a; /* чтобы выглядел как остальные квадраты */
   position: relative;
   overflow: hidden;
 }
-/* Когда видео активируется — убираем иконку и рамку */
-.video-container.local-video video {
-  border: none;
-}
-.video-container.local-video.active::before {
-  display: none;
-}
-.video-container.local-video.active {
-  border: none;
-}
-/* Убираем надпись You на локальном видео */
-.local-video .video-label { display: none; }
-      
-      .video-container.active {
-        border-color: #0088cc;
-      }
       
       /* Плейсхолдер для пустых ячеек */
       .video-container.placeholder {
-        background: #0f0f0f;
+        background: transparent;
         border: 2px dashed #2a2a2a;
       }
-      .video-container.local-video.placeholder { background: #0f0f0f; border: 2px dashed #2a2a2a; }
+      .video-container.local-video.placeholder { background: transparent; border: 2px dashed #2a2a2a; }
       .video-container .avatar {
         position: absolute;
         inset: 0;
@@ -1005,6 +988,25 @@
         color: white;
       }
       
+      .settings-pill.active {
+        background: #ffd700;
+        color: #000;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+      }
+      
+      /* Подсветка только внутри секции видео */
+      .video-section.flashlight-on {
+        background: #ffffff !important;
+      }
+      .video-section.flashlight-on * {
+        background: #ffffff !important;
+      }
+
+      /* Дополнительно красим фон страницы под фиксированными контролами */
+      body.flashlight-bg, .wrap.flashlight-bg { background: #ffffff !important; }
+      /* Сохраняем правую колонку тёмной */
+      .wrap.flashlight-bg .participants-section { background: #00000056 !important; }
+      
       .control-btn.leave {
         background: #ed4245;
         color: white;
@@ -1180,7 +1182,6 @@
           <div class="videos-grid" id="videosGrid">
             <div class="video-container local-video">
               <div class="video-label">
-                <span>You</span>
                 <div class="mic-status" id="localMicStatus"></div>
               </div>
               <video id="localVideo" autoplay playsinline muted></video>
@@ -1247,7 +1248,7 @@
               </button>
               <div class="settings-submenu" id="settingsSubmenu">
                 <button class="settings-pill" id="transBtn"><img src="/icon/screen_share_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Screen Share" width="20" height="20" /><span>Trans</span></button>
-                <button class="settings-pill" id="qualityToggle"><img src="/icon/hd_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="HD" width="20" height="20" /><span id="qualityText">HD+</span></button>
+                <button class="settings-pill" id="flashlightToggle"><img src="/icon/flashlight_on_24dp_345D2F_FILL0_wght400_GRAD0_opsz24.svg" alt="Flashlight" width="20" height="20" /><span id="flashlightText">ON</span></button>
                 <button class="settings-pill" id="swapCameraBtn"><img src="/icon/cameraswitch_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Swap Camera" width="20" height="20" /><span>Swap</span></button>
               </div>
             </div>
@@ -2190,6 +2191,38 @@
         }
       }
 
+      // Фонарик для подсветки лица - белый фон
+      let flashlightEnabled = false;
+      
+      function toggleFlashlight() {
+        try {
+          if (flashlightEnabled) {
+            // Выключаем фонарик - убираем белый фон
+            const videoSection = document.querySelector('.video-section');
+            if (videoSection) videoSection.classList.remove('flashlight-on');
+            document.body.classList.remove('flashlight-bg');
+            const wrap = document.querySelector('.wrap');
+            if (wrap) wrap.classList.remove('flashlight-bg');
+            flashlightEnabled = false;
+            document.getElementById('flashlightText').textContent = 'ON';
+            document.getElementById('flashlightToggle').classList.remove('active');
+          } else {
+            // Включаем фонарик - делаем фон белым
+            const videoSection = document.querySelector('.video-section');
+            if (videoSection) videoSection.classList.add('flashlight-on');
+            document.body.classList.add('flashlight-bg');
+            const wrap = document.querySelector('.wrap');
+            if (wrap) wrap.classList.add('flashlight-bg');
+            flashlightEnabled = true;
+            document.getElementById('flashlightText').textContent = 'OFF';
+            document.getElementById('flashlightToggle').classList.add('active');
+          }
+        } catch (e) {
+          showNotification('Не удалось включить фонарик');
+          console.warn(e);
+        }
+      }
+
       // Обновление лейбла качества видео
       function updateQualityLabel() { /* упрощено */ }
 
@@ -2653,6 +2686,20 @@
         // Останавливаем heartbeat
         stopHeartbeat();
         
+        // Гарантированно выключаем фонарик
+        try {
+          const videoSection = document.querySelector('.video-section');
+          if (videoSection) videoSection.classList.remove('flashlight-on');
+          document.body.classList.remove('flashlight-bg');
+          const wrap = document.querySelector('.wrap');
+          if (wrap) wrap.classList.remove('flashlight-bg');
+          flashlightEnabled = false;
+          const flTextEl = document.getElementById('flashlightText');
+          if (flTextEl) flTextEl.textContent = 'ON';
+          const flToggleEl = document.getElementById('flashlightToggle');
+          if (flToggleEl) flToggleEl.classList.remove('active');
+        } catch (e) { /* noop */ }
+
         showControls(false);
         clearError();
         updateVideoGridLayout();
@@ -2913,8 +2960,8 @@
       // screenShareBtn удалён, используем transBtn
       const settingsBtn = document.getElementById('settingsBtn');
       const settingsSubmenu = document.getElementById('settingsSubmenu');
-      const qualityToggle = document.getElementById('qualityToggle');
-      const qualityText = document.getElementById('qualityText');
+      const flashlightToggle = document.getElementById('flashlightToggle');
+      const flashlightText = document.getElementById('flashlightText');
       const swapCameraBtn = document.getElementById('swapCameraBtn');
       const transBtn = document.getElementById('transBtn');
       confirmNameBtn.onclick = confirmUserName;
@@ -2944,7 +2991,7 @@
         const clickedInside = settingsBtn.contains(e.target) || settingsSubmenu.contains(e.target);
         if (!clickedInside) closeSettingsMenu();
       });
-      qualityToggle.onclick = () => { /* качество не меняем динамически */ };
+      flashlightToggle.onclick = toggleFlashlight;
       transBtn.onclick = toggleScreenShare;
       swapCameraBtn.addEventListener('click', swapCamera);
       
