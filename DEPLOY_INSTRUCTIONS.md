@@ -42,10 +42,10 @@ pm2 restart adeita
 cd /var/www/adeita.online
 
 # Бэкап текущей конфигурации
-cp /etc/nginx/sites-available/adeita.online /etc/nginx/sites-available/adeita.online.backup
+cp /etc/nginx/sites-available/adeita.ru /etc/nginx/sites-available/adeita.ru.backup
 
 # Скопируй новую конфигурацию
-cp nginx.conf /etc/nginx/sites-available/adeita.online
+cp nginx.conf /etc/nginx/sites-available/adeita.ru
 
 # Проверь синтаксис
 nginx -t
@@ -215,7 +215,7 @@ Cmd+Shift+R (Mac)
 
 ### Откатить Nginx:
 ```bash
-cp /etc/nginx/sites-available/adeita.online.backup /etc/nginx/sites-available/adeita.online
+cp /etc/nginx/sites-available/adeita.ru.backup /etc/nginx/sites-available/adeita.ru
 nginx -t
 systemctl reload nginx
 ```
