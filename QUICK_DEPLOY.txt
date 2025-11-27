@@ -11,3 +11,8 @@ chmod +x deploy-solid.sh
 pm2 restart adeita
 pm2 logs adeita --lines 50
 
+# ЕСЛИ НУЖНО ОБНОВИТЬ NGINX (только при проблемах):
+# cp /var/www/adeita.online/nginx.conf /etc/nginx/sites-available/adeita.online
+# nginx -t
+# systemctl reload nginx
+
