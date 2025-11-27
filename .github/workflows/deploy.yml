@@ -31,6 +31,8 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key root@95.81.117.141 "
             cd /var/www/adeita.online &&
+            git reset --hard HEAD &&
+            git clean -fd &&
             git pull origin main &&
             cd solid-app &&
             npm install &&
