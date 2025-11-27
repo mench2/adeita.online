@@ -1,0 +1,13 @@
+# БЫСТРЫЙ ДЕПЛОЙ - КОПИРУЙ ЭТИ КОМАНДЫ НА СЕРВЕР:
+
+cd /var/www/adeita.online
+git pull
+cd solid-app
+npm install
+npm run build
+cd ..
+chmod +x deploy-solid.sh
+./deploy-solid.sh
+pm2 restart adeita
+pm2 logs adeita --lines 50
+
