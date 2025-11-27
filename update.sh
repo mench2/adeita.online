@@ -5,6 +5,11 @@ echo "🚀 Starting deployment..."
 # Переходим в директорию проекта
 cd /var/www/adeita.online
 
+# Сбрасываем локальные изменения (в public/ и т.д.)
+echo "🔄 Resetting local changes..."
+git reset --hard HEAD
+git clean -fd
+
 # Получаем последние изменения
 echo "📥 Pulling latest changes..."
 git pull
