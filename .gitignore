@@ -1,2 +1,14 @@
 node_modules/
 node_modules
+
+# Solid.js
+solid-app/node_modules/
+solid-app/dist/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+*.log
