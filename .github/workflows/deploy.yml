@@ -32,6 +32,13 @@ jobs:
           ssh -i ~/.ssh/deploy_key root@95.81.117.141 "
             cd /var/www/adeita.online &&
             git pull origin main &&
+            cd solid-app &&
             npm install &&
-            pm2 restart adeita
+            npm run build &&
+            cd .. &&
+            chmod +x deploy-solid.sh &&
+            ./deploy-solid.sh &&
+            pm2 restart adeita &&
+            echo '✅ Deployment complete!' &&
+            pm2 status
           "
