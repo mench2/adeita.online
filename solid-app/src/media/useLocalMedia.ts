@@ -350,7 +350,7 @@ export function createLocalMedia() {
       const processedStream = await processor.processStream(currentStream);
       setNoiseProcessor(processor);
       
-      // Заменяем аудио треки во всех соединениях
+      // Заменяем ТОЛЬКО аудио треки во всех соединениях
       for (const [peerId, peer] of peersStore.peers().entries()) {
         const audioSender = peer.pc.getSenders().find(s => s.track && s.track.kind === 'audio');
         if (audioSender && processedStream.getAudioTracks()[0]) {
@@ -358,7 +358,12 @@ export function createLocalMedia() {
         }
       }
       
-      setLocalStream(processedStream);
+      // Создаем новый стрим с обработанным аудио и старым видео
+      const newStream = new MediaStream();
+      processedStream.getAudioTracks().forEach(track => newStream.addTrack(track));
+      currentStream.getVideoTracks().forEach(track => newStream.addTrack(track));
+      
+      setLocalStream(newStream);
       showNotification('🎙️ Шумоподавление включено');
     } else {
       // Выключаем шумоподавление
@@ -368,9 +373,42 @@ export function createLocalMedia() {
         setNoiseProcessor(null);
       }
       
-      // Получаем новый чистый стрим
-      await getLocalStream();
-      showNotification('🎙️ Шумоподавление выключено');
+      // Получаем новый аудио трек без обработки
+      try {
+        const newAudioStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+            channelCount: 1
+          }
+        });
+        
+        const newAudioTrack = newAudioStream.getAudioTracks()[0];
+        
+        // Заменяем аудио треки во всех соединениях
+        for (const [peerId, peer] of peersStore.peers().entries()) {
+          const audioSender = peer.pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+          if (audioSender && newAudioTrack) {
+            await audioSender.replaceTrack(newAudioTrack);
+          }
+        }
+        
+        // Создаем новый стрим с новым аудио и старым видео
+        const newStream = new MediaStream();
+        newStream.addTrack(newAudioTrack);
+        currentStream.getVideoTracks().forEach(track => newStream.addTrack(track));
+        
+        // Останавливаем старые аудио треки
+        currentStream.getAudioTracks().forEach(track => track.stop());
+        
+        setLocalStream(newStream);
+        showNotification('🎙️ Шумоподавление выключено');
+      } catch (error) {
+        console.error('Failed to get new audio stream:', error);
+        showNotification('Ошибка при выключении шумоподавления');
+      }
     }
   };
 

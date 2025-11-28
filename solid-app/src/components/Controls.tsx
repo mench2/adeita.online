@@ -122,12 +122,10 @@ export default function Controls(props: {
                 <span class="icon">🎙️</span>
                 <span>Шумоподавление</span>
               </button>
-              <div class="settings-pill-group">
-                <VideoQualitySettings 
-                  onQualityChange={props.onQualityChange}
-                  currentQuality={() => appStore.videoQuality()}
-                />
-              </div>
+              <VideoQualitySettings 
+                onQualityChange={props.onQualityChange}
+                currentQuality={() => appStore.videoQuality()}
+              />
             </div>
           </div>
           <button class="control-btn round copy-link" id="copyLinkBtn" onClick={props.onCopyLink} title="Share">
