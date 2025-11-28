@@ -27,6 +27,9 @@ export const [useDirectConnection, setUseDirectConnection] = createSignal(false)
 export const [videoQuality, setVideoQuality] = createSignal<'1080p' | '720p' | '480p' | 'auto'>('auto');
 export const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = createSignal(false);
 export const [pipEnabled, setPipEnabled] = createSignal(false);
+export const [e2eeEnabled, setE2eeEnabled] = createSignal(true); // E2EE включен по умолчанию
+export const [e2eeKey, setE2eeKey] = createSignal<CryptoKey | null>(null);
+export const [e2eeKeyString, setE2eeKeyString] = createSignal<string>('');
 
 export function generateRoomId(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

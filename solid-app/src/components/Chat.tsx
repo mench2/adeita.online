@@ -2,6 +2,7 @@ import { createSignal, For, createEffect, Show, batch } from 'solid-js';
 import { IS_MOBILE } from '../utils/detection';
 import * as appStore from '../stores/appStore';
 import { getSocket } from '../hooks/useSocket';
+import { encryptText, decryptText } from '../utils/e2ee';
 
 export default function Chat() {
   const [input, setInput] = createSignal('');
@@ -22,7 +23,7 @@ export default function Chat() {
     }, 10);
   });
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = input().trim();
     if (!text) return;
     
@@ -35,11 +36,28 @@ export default function Chat() {
     }
     
     const socket = getSocket();
-    socket?.emit('chat-message', {
-      author: appStore.userName(),
-      text: text,
-      timestamp: new Date()
-    });
+    
+    // Шифруем сообщение если E2EE включен
+    if (appStore.e2eeEnabled() && appStore.e2eeKey()) {
+      try {
+        const { encrypted, iv } = await encryptText(text, appStore.e2eeKey()!);
+        socket?.emit('chat-message', {
+          author: appStore.userName(),
+          encrypted: encrypted,
+          iv: iv,
+          timestamp: new Date()
+        });
+      } catch (error) {
+        console.error('Failed to encrypt message:', error);
+        return;
+      }
+    } else {
+      socket?.emit('chat-message', {
+        author: appStore.userName(),
+        text: text,
+        timestamp: new Date()
+      });
+    }
     
     batch(() => {
       appStore.addChatMessage(appStore.userName(), text, true);

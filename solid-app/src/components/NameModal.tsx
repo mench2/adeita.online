@@ -2,6 +2,7 @@ import { createSignal, Show, onMount } from 'solid-js';
 import * as appStore from '../stores/appStore';
 import { getSocket } from '../hooks/useSocket';
 import { showNotification } from '../utils/notifications';
+import { encryptText } from '../utils/e2ee';
 
 export default function NameModal() {
   const [name, setName] = createSignal('');
@@ -16,7 +17,7 @@ export default function NameModal() {
     }
   });
 
-  const confirm = () => {
+  const confirm = async () => {
     const n = name().trim();
     if (n.length < 2) {
       showNotification('Имя должно содержать минимум 2 символа');
@@ -32,11 +33,27 @@ export default function NameModal() {
     socket?.emit('set-user-name', { userName: n });
     const pending = appStore.pendingChatText();
     if (pending && pending.trim()) {
-      socket?.emit('chat-message', {
-        author: n,
-        text: pending,
-        timestamp: new Date()
-      });
+      // Шифруем сообщение если E2EE включен
+      if (appStore.e2eeEnabled() && appStore.e2eeKey()) {
+        try {
+          const { encrypted, iv } = await encryptText(pending, appStore.e2eeKey()!);
+          socket?.emit('chat-message', {
+            author: n,
+            encrypted: encrypted,
+            iv: iv,
+            timestamp: new Date()
+          });
+        } catch (error) {
+          console.error('Failed to encrypt pending message:', error);
+          return;
+        }
+      } else {
+        socket?.emit('chat-message', {
+          author: n,
+          text: pending,
+          timestamp: new Date()
+        });
+      }
       appStore.addChatMessage(n, pending, true);
       appStore.setPendingChatText(null);
     }

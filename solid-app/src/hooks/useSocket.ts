@@ -91,9 +91,33 @@ export function createSocket(onSignal?: (from: string, data: SignalData) => Prom
     appStore.updateUserName(socketId, peerUserName);
   });
 
-  socket.on('chat-message', ({ author, text, timestamp }: { author: string; text: string; timestamp: Date }) => {
-    console.log(`Chat message from ${author}: ${text}`);
-    if (onChatMessage) onChatMessage(author, text, new Date(timestamp));
+  socket.on('chat-message', async ({ author, text, encrypted, iv, timestamp }: { 
+    author: string; 
+    text?: string; 
+    encrypted?: string; 
+    iv?: string; 
+    timestamp: Date 
+  }) => {
+    // Импортируем динамически чтобы избежать циклических зависимостей
+    const { decryptText } = await import('../utils/e2ee');
+    const appStoreModule = await import('../stores/appStore');
+    
+    let messageText = text || '';
+    
+    // Если сообщение зашифровано - расшифровываем
+    if (encrypted && iv && appStoreModule.e2eeEnabled() && appStoreModule.e2eeKey()) {
+      try {
+        messageText = await decryptText(encrypted, iv, appStoreModule.e2eeKey()!);
+        console.log(`🔒 Decrypted chat message from ${author}`);
+      } catch (error) {
+        console.error('Failed to decrypt chat message:', error);
+        messageText = '[Не удалось расшифровать сообщение]';
+      }
+    } else {
+      console.log(`Chat message from ${author}: ${messageText}`);
+    }
+    
+    if (onChatMessage) onChatMessage(author, messageText, new Date(timestamp));
   });
 
   socket.on('signal', async ({ from, data }: { from: string; data: SignalData }) => {

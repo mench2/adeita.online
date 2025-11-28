@@ -1287,10 +1287,31 @@
       }
 
       /* Mobile: компактно в правом верхнем углу */
+      /* E2EE Indicator */
+      .e2ee-indicator {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(26, 26, 26, 0.95);
+        border: 1px solid #16a34a;
+        border-radius: 12px;
+        padding: 8px 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 4px 16px rgba(22, 163, 74, 0.2);
+        z-index: 101;
+        font-size: 13px;
+        font-weight: 600;
+        color: #16a34a;
+        transition: all 0.3s ease;
+      }
+
       /* Connection Quality Indicator */
       .connection-quality-indicator {
         position: fixed;
-        top: 20px;
+        top: 60px; /* Смещаем вниз чтобы не перекрывать E2EE индикатор */
         left: 20px;
         background: rgba(26, 26, 26, 0.95);
         border: 1px solid #2a2a2a;
@@ -1406,8 +1427,15 @@
       }
 
       @media (max-width: 768px) {
-        .connection-quality-indicator {
+        .e2ee-indicator {
           top: 12px;
+          left: 12px;
+          padding: 6px 10px;
+          font-size: 11px;
+        }
+
+        .connection-quality-indicator {
+          top: 50px; /* Смещаем вниз на мобильных */
           left: 12px;
           padding: 8px 12px;
           gap: 8px;

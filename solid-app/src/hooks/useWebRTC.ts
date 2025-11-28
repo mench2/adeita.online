@@ -5,6 +5,7 @@ import * as peersStore from '../stores/peersStore';
 import * as appStore from '../stores/appStore';
 import { getSocket } from './useSocket';
 import type { Peer } from '../stores/peersStore';
+import { FrameCryptor, setupSenderTransform, setupReceiverTransform } from '../utils/e2ee';
 
 export function createPeerConnection(peerId: string, localStream: MediaStream | null): Peer {
   const participantCount = 1 + peersStore.peers().size;
@@ -116,8 +117,38 @@ export function createPeerConnection(peerId: string, localStream: MediaStream | 
   
   if (localStream) {
     for (const track of localStream.getTracks()) {
-      pc.addTrack(track, localStream);
+      const sender = pc.addTrack(track, localStream);
+      
+      // Применяем E2EE к исходящим трекам
+      if (appStore.e2eeEnabled() && appStore.e2eeKey()) {
+        const cryptor = new FrameCryptor(appStore.e2eeKey()!);
+        cryptor.initialize().then(() => {
+          setupSenderTransform(sender, cryptor).catch(err => {
+            console.warn('Failed to setup sender E2EE transform:', err);
+          });
+        });
+      }
     }
+  }
+  
+  // Применяем E2EE к входящим трекам
+  if (appStore.e2eeEnabled() && appStore.e2eeKey()) {
+    pc.ontrack = ((originalOnTrack) => {
+      return (e: RTCTrackEvent) => {
+        // Сначала вызываем оригинальный обработчик
+        originalOnTrack(e);
+        
+        // Затем применяем расшифровку
+        const cryptor = new FrameCryptor(appStore.e2eeKey()!);
+        cryptor.initialize().then(() => {
+          for (const receiver of e.receiver ? [e.receiver] : pc.getReceivers()) {
+            setupReceiverTransform(receiver, cryptor).catch(err => {
+              console.warn('Failed to setup receiver E2EE transform:', err);
+            });
+          }
+        });
+      };
+    })(pc.ontrack!);
   } else {
     pc.addTransceiver('video', { direction: 'recvonly' });
     pc.addTransceiver('audio', { direction: 'recvonly' });

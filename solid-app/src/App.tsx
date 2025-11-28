@@ -15,17 +15,20 @@ import NameModal from './components/NameModal';
 import Preloader from './components/Preloader';
 import ConnectionTypeSelector from './components/ConnectionTypeSelector';
 import ConnectionQualityIndicator from './components/ConnectionQualityIndicator';
+import E2EEIndicator from './components/E2EEIndicator';
 import type { VideoQualityPreset } from './components/VideoQualitySettings';
+import { generateRoomKey, exportKey, importKey, decryptText } from './utils/e2ee';
 import './styles.css';
 
 export default function App() {
   const media = createLocalMedia();
   let firstInteraction = true;
 
-  const checkUrlParams = () => {
+  const checkUrlParams = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = urlParams.get('room');
     const directParam = urlParams.get('direct'); // Параметр типа подключения
+    const keyParam = urlParams.get('key'); // Ключ шифрования E2EE
     let tgStartParam = urlParams.get('tgWebAppStartParam') || urlParams.get('startapp');
     
     // Проверяем Telegram WebApp initDataUnsafe
@@ -47,6 +50,30 @@ export default function App() {
     } else if (directParam === '0' || directParam === 'false') {
       appStore.setUseDirectConnection(false);
       console.log('🌐 Тип подключения из URL: Через сервер');
+    }
+    
+    // Инициализация E2EE
+    if (keyParam) {
+      // Импортируем ключ из URL
+      try {
+        const key = await importKey(keyParam);
+        appStore.setE2eeKey(key);
+        appStore.setE2eeKeyString(keyParam);
+        console.log('🔒 E2EE ключ импортирован из URL');
+      } catch (error) {
+        console.error('Failed to import E2EE key from URL:', error);
+      }
+    } else {
+      // Генерируем новый ключ для создателя комнаты
+      try {
+        const key = await generateRoomKey();
+        const keyString = await exportKey(key);
+        appStore.setE2eeKey(key);
+        appStore.setE2eeKeyString(keyString);
+        console.log('🔒 Новый E2EE ключ сгенерирован');
+      } catch (error) {
+        console.error('Failed to generate E2EE key:', error);
+      }
     }
 
     if (tgStartParam) {
@@ -232,15 +259,19 @@ export default function App() {
   const copyRoomLink = async () => {
     // Добавляем параметр direct в URL если используется секретное подключение
     const directParam = appStore.useDirectConnection() ? '&direct=1' : '';
-    const roomUrl = `${window.location.origin}${window.location.pathname}?room=${appStore.roomId()}${directParam}`;
-    const tgAppLink = `https://t.me/AdeitaBot/Adeita_Vichat?startapp=${appStore.roomId()}${directParam}`;
+    
+    // Добавляем ключ E2EE в URL
+    const keyParam = appStore.e2eeKeyString() ? `&key=${appStore.e2eeKeyString()}` : '';
+    
+    const roomUrl = `${window.location.origin}${window.location.pathname}?room=${appStore.roomId()}${directParam}${keyParam}`;
+    const tgAppLink = `https://t.me/AdeitaBot/Adeita_Vichat?startapp=${appStore.roomId()}${directParam}${keyParam}`;
     
     // Добавляем информацию о типе подключения в текст
     const connectionType = appStore.useDirectConnection() 
       ? '🔒 Секретное подключение (P2P)' 
       : '🌐 Через сервер';
     
-    const shareText = `Привет! Приглашаю присоединиться к звонку\n\nТип подключения: ${connectionType}\n\nТы можешь это сделать либо:\n\n— Через Telegram Mini App: ${tgAppLink}\n\n— Через сайт: ${roomUrl}\n\n😿Если Telegram Mini App не открывается ты можешь присоединиться через сайт`;
+    const shareText = `Привет! Приглашаю присоединиться к звонку\n\nТип подключения: ${connectionType}\n🔒 Сквозное шифрование включено\n\nТы можешь это сделать либо:\n\n— Через Telegram Mini App: ${tgAppLink}\n\n— Через сайт: ${roomUrl}\n\n😿Если Telegram Mini App не открывается ты можешь присоединиться через сайт`;
     
     if (IS_TELEGRAM && typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
       (window as any).Telegram.WebApp.sendData(shareText);
@@ -518,6 +549,7 @@ export default function App() {
           </div>
         </div>
         
+        <E2EEIndicator />
         <ConnectionQualityIndicator />
         
         <Show when={appStore.error()}>
