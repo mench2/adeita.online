@@ -132,8 +132,16 @@ export default function VideoGrid(props: {
       const existingElement = document.getElementById(`video-${peerId}`);
       if (!existingElement) {
         const container = createRemoteVideoElement(peerId);
-        videosGrid.appendChild(container);
-        console.log('[VideoGrid] Added video element for peer:', peerId);
+        
+        // Вставляем удаленное видео ПЕРЕД placeholder'ами
+        const firstPlaceholder = videosGrid.querySelector('.video-container.placeholder');
+        if (firstPlaceholder) {
+          videosGrid.insertBefore(container, firstPlaceholder);
+          console.log('[VideoGrid] Inserted video element before placeholders for peer:', peerId);
+        } else {
+          videosGrid.appendChild(container);
+          console.log('[VideoGrid] Appended video element for peer:', peerId);
+        }
       } else {
         console.log('[VideoGrid] Video element already exists for peer:', peerId);
       }
