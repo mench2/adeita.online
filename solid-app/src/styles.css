@@ -1207,6 +1207,18 @@
         min-width: 400px;
       }
 
+      /* Telegram WebApp: опускаем селектор типа подключения */
+      .tg-webapp .connection-type-selector-compact {
+        top: 80px;
+        right: 12px;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        padding: 10px 12px;
+        min-width: 180px;
+        border-radius: 12px;
+      }
+
       .connection-compact-row {
         display: flex;
         align-items: center;
@@ -1308,6 +1320,11 @@
         transition: all 0.3s ease;
       }
 
+      /* Telegram WebApp: опускаем индикаторы ниже */
+      .tg-webapp .e2ee-indicator {
+        top: 80px;
+      }
+
       /* Connection Quality Indicator */
       .connection-quality-indicator {
         position: fixed;
@@ -1324,6 +1341,11 @@
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         z-index: 100;
         transition: all 0.3s ease;
+      }
+
+      /* Telegram WebApp: опускаем индикатор качества ниже */
+      .tg-webapp .connection-quality-indicator {
+        top: 120px;
       }
 
       .quality-icon {
@@ -1434,11 +1456,21 @@
           font-size: 11px;
         }
 
+        /* Telegram WebApp на мобильных: опускаем еще ниже */
+        .tg-webapp .e2ee-indicator {
+          top: 70px;
+        }
+
         .connection-quality-indicator {
           top: 50px; /* Смещаем вниз на мобильных */
           left: 12px;
           padding: 8px 12px;
           gap: 8px;
+        }
+
+        /* Telegram WebApp на мобильных: опускаем индикатор качества */
+        .tg-webapp .connection-quality-indicator {
+          top: 108px;
         }
 
         .quality-icon {
@@ -1470,6 +1502,11 @@
           padding: 10px 12px;
           min-width: 180px;
           border-radius: 12px;
+        }
+
+        /* Telegram WebApp на мобильных: опускаем селектор типа подключения */
+        .tg-webapp .connection-type-selector-compact {
+          top: 70px;
         }
 
         .connection-compact-row {

@@ -278,3 +278,4 @@ const enablePictureInPicture = async () => {
 **Дата релиза**: 28 ноября 2025  
 **Автор**: Adeita Team
 
+
