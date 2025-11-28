@@ -93,8 +93,24 @@ export default function Controls(props: {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const settingsBtn = document.getElementById('settingsBtn');
+      
+      // Проверяем, не кликнули ли мы на кнопку качества или её элементы
+      const isQualityButton = target.closest('.settings-pill')?.textContent?.includes('Качество') ||
+                             target.closest('.settings-pill')?.textContent?.includes('1080p') ||
+                             target.closest('.settings-pill')?.textContent?.includes('720p') ||
+                             target.closest('.settings-pill')?.textContent?.includes('480p') ||
+                             target.closest('.settings-pill')?.textContent?.includes('Авто') ||
+                             target.closest('.settings-pill')?.textContent?.includes('Назад');
+      
+      // Если кликнули на кнопку качества - игнорируем
+      if (isQualityButton) {
+        console.log('Controls: Click on quality button, ignoring');
+        return;
+      }
+      
       const clickedInside = settingsSubmenu?.contains(target) || settingsBtn?.contains(target);
       if (!clickedInside && showSettings()) {
+        console.log('Controls: Click outside, closing menu');
         closeSettingsMenu();
         // При закрытии основного меню также закрываем меню качества
         setShowQualityMenu(false);

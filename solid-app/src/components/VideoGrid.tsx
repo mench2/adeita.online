@@ -121,12 +121,20 @@ export default function VideoGrid(props: {
 
   createEffect(() => {
     const peerIds = peersStore.getAllPeerIds();
+    console.log('[VideoGrid] Peers changed:', peerIds);
     peerIds.forEach(peerId => {
       if (!document.getElementById(`video-${peerId}`)) {
         const container = createRemoteVideoElement(peerId);
         videosGrid.appendChild(container);
+        console.log('[VideoGrid] Added video element for peer:', peerId);
       }
     });
+    
+    // Логируем текущее состояние grid
+    const allContainers = videosGrid.querySelectorAll('.video-container');
+    console.log('[VideoGrid] Total containers:', allContainers.length);
+    console.log('[VideoGrid] Grid computed style:', window.getComputedStyle(videosGrid).gridTemplateColumns);
+    
     updateVideoGridLayout();
   });
 
