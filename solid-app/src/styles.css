@@ -1298,9 +1298,145 @@
         padding: 8px 0 0 0;
       }
 
+      /* Status Bar - компактная плашка над видео-сеткой */
+      .status-bar {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(26, 26, 26, 0.95);
+        border: 1px solid #2a2a2a;
+        border-radius: 16px;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        z-index: 101;
+        transition: all 0.3s ease;
+      }
+
+      .status-bar-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .status-icon {
+        font-size: 16px;
+        line-height: 1;
+      }
+
+      .status-text {
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff;
+        white-space: nowrap;
+      }
+
+      .e2ee-status .status-text {
+        color: #16a34a;
+      }
+
+      .status-bar-divider {
+        width: 1px;
+        height: 20px;
+        background: #3a3a3a;
+      }
+
+      .connection-toggle-mini {
+        position: relative;
+        width: 48px;
+        height: 24px;
+        background: #2a2a2a;
+        border: 1px solid #3a3a3a;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 0;
+        outline: none;
+      }
+
+      .connection-toggle-mini:hover:not(.locked) {
+        border-color: #515c30;
+        box-shadow: 0 0 8px rgba(81, 92, 48, 0.3);
+      }
+
+      .connection-toggle-mini.locked {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .toggle-slider-mini {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 18px;
+        height: 18px;
+        background: #515c30;
+        border-radius: 9px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .toggle-slider-mini.direct {
+        left: calc(100% - 20px);
+        background: #6b7c3d;
+      }
+
+      .toggle-icon-mini {
+        font-size: 10px;
+        line-height: 1;
+      }
+
+      @media (max-width: 768px) {
+        .status-bar {
+          top: 12px;
+          padding: 8px 12px;
+          gap: 10px;
+        }
+
+        .status-icon {
+          font-size: 14px;
+        }
+
+        .status-text {
+          font-size: 11px;
+        }
+
+        .connection-toggle-mini {
+          width: 42px;
+          height: 22px;
+        }
+
+        .toggle-slider-mini {
+          width: 16px;
+          height: 16px;
+        }
+
+        .toggle-slider-mini.direct {
+          left: calc(100% - 18px);
+        }
+
+        .toggle-icon-mini {
+          font-size: 9px;
+        }
+      }
+
+      /* Скрываем старые индикаторы */
+      .e2ee-indicator,
+      .connection-quality-indicator,
+      .connection-type-selector-compact {
+        display: none !important;
+      }
+
       /* Mobile: компактно в правом верхнем углу */
       /* E2EE Indicator */
-      .e2ee-indicator {
+      .e2ee-indicator-old {
         position: fixed;
         top: 20px;
         left: 20px;

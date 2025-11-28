@@ -13,9 +13,7 @@ import Controls from './components/Controls';
 import Chat from './components/Chat';
 import NameModal from './components/NameModal';
 import Preloader from './components/Preloader';
-import ConnectionTypeSelector from './components/ConnectionTypeSelector';
-import ConnectionQualityIndicator from './components/ConnectionQualityIndicator';
-import E2EEIndicator from './components/E2EEIndicator';
+import StatusBar from './components/StatusBar';
 import type { VideoQualityPreset } from './components/VideoQualitySettings';
 import { generateRoomKey, exportKey, importKey, decryptText } from './utils/e2ee';
 import './styles.css';
@@ -528,14 +526,12 @@ export default function App() {
         </header>
 
         <div class="main-content">
+          <StatusBar />
           <VideoGrid localStream={media.localStream} />
           <div class="participants-section" id="participantsSection" style={IS_MOBILE ? 'display: none !important;' : ''}>
             <Chat />
           </div>
         </div>
-        
-        <E2EEIndicator />
-        <ConnectionQualityIndicator />
         
         <Show when={appStore.error()}>
           <div id="errors">
@@ -544,8 +540,6 @@ export default function App() {
         </Show>
 
         <NameModal />
-
-        <ConnectionTypeSelector />
 
         <Show when={!appStore.showControls()}>
           <div class="call-button-container" id="callButtonContainer">
