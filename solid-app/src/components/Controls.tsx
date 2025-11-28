@@ -19,6 +19,7 @@ export default function Controls(props: {
 }) {
   const mediaState = createMediaState(props.localStream);
   const [showSettings, setShowSettings] = createSignal(false);
+  const [showQualityMenu, setShowQualityMenu] = createSignal(false);
   let settingsSubmenu!: HTMLDivElement;
   let flashlightBtn!: HTMLButtonElement;
   let transBtn!: HTMLButtonElement;
@@ -44,8 +45,17 @@ export default function Controls(props: {
   };
 
   const toggleSettingsMenu = () => {
-    if (showSettings()) closeSettingsMenu();
-    else openSettingsMenu();
+    if (showSettings()) {
+      closeSettingsMenu();
+      // При закрытии настроек также закрываем меню качества
+      setShowQualityMenu(false);
+    } else {
+      openSettingsMenu();
+    }
+  };
+
+  const toggleQualityMenu = () => {
+    setShowQualityMenu(!showQualityMenu());
   };
 
   // Обновляем текст кнопки flashlight при изменении состояния
@@ -106,25 +116,29 @@ export default function Controls(props: {
               <img src="/icon/settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Settings" width="24" height="24" />
             </button>
             <div class="settings-submenu" id="settingsSubmenu" ref={settingsSubmenu}>
-              <button class={`settings-pill ${appStore.isScreenSharing() ? 'active' : ''}`} id="transBtn" ref={transBtn} onClick={props.onToggleScreenShare}>
-                <img src="/icon/screen_share_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Screen Share" width="20" height="20" />
-                <span>{appStore.isScreenSharing() ? 'Stop' : 'Trans'}</span>
-              </button>
-              <button class={`settings-pill ${props.flashlightEnabled ? 'active' : ''}`} id="flashlightToggle" ref={flashlightBtn} onClick={props.onToggleFlashlight}>
-                <img src="/icon/flashlight_on_24dp_345D2F_FILL0_wght400_GRAD0_opsz24.svg" alt="Flashlight" width="20" height="20" />
-                <span>{props.flashlightEnabled ? 'OFF' : 'ON'}</span>
-              </button>
-              <button class="settings-pill" id="swapCameraBtn" onClick={props.onSwapCamera}>
-                <img src="/icon/cameraswitch_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Swap Camera" width="20" height="20" />
-                <span>Swap</span>
-              </button>
-              <button class={`settings-pill ${appStore.noiseSuppressionEnabled() ? 'active' : ''}`} onClick={props.onToggleNoiseSuppression}>
-                <span class="icon">🎙️</span>
-                <span>Шумоподавление</span>
-              </button>
+              <Show when={!showQualityMenu()}>
+                <button class={`settings-pill ${appStore.isScreenSharing() ? 'active' : ''}`} id="transBtn" ref={transBtn} onClick={props.onToggleScreenShare}>
+                  <img src="/icon/screen_share_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Screen Share" width="20" height="20" />
+                  <span>{appStore.isScreenSharing() ? 'Stop' : 'Trans'}</span>
+                </button>
+                <button class={`settings-pill ${props.flashlightEnabled ? 'active' : ''}`} id="flashlightToggle" ref={flashlightBtn} onClick={props.onToggleFlashlight}>
+                  <img src="/icon/flashlight_on_24dp_345D2F_FILL0_wght400_GRAD0_opsz24.svg" alt="Flashlight" width="20" height="20" />
+                  <span>{props.flashlightEnabled ? 'OFF' : 'ON'}</span>
+                </button>
+                <button class="settings-pill" id="swapCameraBtn" onClick={props.onSwapCamera}>
+                  <img src="/icon/cameraswitch_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Swap Camera" width="20" height="20" />
+                  <span>Swap</span>
+                </button>
+                <button class={`settings-pill ${appStore.noiseSuppressionEnabled() ? 'active' : ''}`} onClick={props.onToggleNoiseSuppression}>
+                  <span class="icon">🎙️</span>
+                  <span>Шумоподавление</span>
+                </button>
+              </Show>
               <VideoQualitySettings 
                 onQualityChange={props.onQualityChange}
                 currentQuality={() => appStore.videoQuality()}
+                showQualityMenu={showQualityMenu}
+                onToggleQualityMenu={toggleQualityMenu}
               />
             </div>
           </div>

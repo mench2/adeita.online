@@ -1336,91 +1336,39 @@
 
       /* Video Quality Settings */
       .video-quality-wrap {
-        position: relative;
-        display: flex;
-        flex-direction: column;
+        display: contents; /* Делаем обертку прозрачной для flex */
       }
 
-      .quality-submenu {
-        position: absolute;
-        right: calc(100% + 12px);
-        bottom: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        opacity: 0;
-        transform: translateX(20px) scale(0.8);
-        pointer-events: none;
-        transition: all 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        filter: blur(8px);
+      /* Варианты качества - темнее основных кнопок */
+      .quality-option {
+        background: #a8c98a !important; /* Темнее чем основной #d0f9bb */
+        color: #2a3d1f !important;
       }
 
-      .quality-submenu.show {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-        pointer-events: auto;
-        filter: blur(0px);
+      .quality-option:hover {
+        background: #96b878 !important;
       }
 
-      .quality-submenu.hiding {
-        opacity: 0;
-        transform: translateX(15px) scale(0.85);
-        pointer-events: none;
-        filter: blur(4px);
+      .quality-option.active {
+        background: #7a9960 !important;
+        box-shadow: 0 0 16px rgba(122, 153, 96, 0.5) !important;
       }
 
-      .quality-item {
-        min-width: 140px;
+      /* Кнопка "Назад" */
+      .back-button {
+        background: #c5e8a8 !important;
+        color: #2a3d1f !important;
+        border: 1px solid rgba(0,0,0,0.1) !important;
       }
 
-      /* Анимация появления элементов качества */
-      @keyframes qualityIn {
-        0% {
-          opacity: 0;
-          transform: translateX(20px) scale(0.3);
-        }
-        30% {
-          opacity: 0.7;
-          transform: translateX(10px) scale(0.6);
-        }
-        70% {
-          opacity: 1;
-          transform: translateX(-3px) scale(1.05);
-        }
-        100% {
-          opacity: 1;
-          transform: translateX(0) scale(1);
-        }
+      .back-button:hover {
+        background: #b3d696 !important;
       }
 
-      @keyframes qualityOut {
-        0% {
-          opacity: 1;
-          transform: translateX(0) scale(1);
-        }
-        100% {
-          opacity: 0;
-          transform: translateX(15px) scale(0.3);
-        }
+      .back-button .icon {
+        font-size: 18px;
+        font-weight: bold;
       }
-
-      .quality-submenu.show .quality-item {
-        animation: qualityIn 350ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-      }
-
-      .quality-submenu.show .quality-item:nth-child(4) { animation-delay: 0ms; }
-      .quality-submenu.show .quality-item:nth-child(3) { animation-delay: 60ms; }
-      .quality-submenu.show .quality-item:nth-child(2) { animation-delay: 120ms; }
-      .quality-submenu.show .quality-item:nth-child(1) { animation-delay: 180ms; }
-
-      .quality-submenu.hiding .quality-item {
-        animation: qualityOut 250ms cubic-bezier(0.55, 0.085, 0.68, 0.53) both;
-      }
-
-      .quality-submenu.hiding .quality-item:nth-child(1) { animation-delay: 0ms; }
-      .quality-submenu.hiding .quality-item:nth-child(2) { animation-delay: 40ms; }
-      .quality-submenu.hiding .quality-item:nth-child(3) { animation-delay: 80ms; }
-      .quality-submenu.hiding .quality-item:nth-child(4) { animation-delay: 120ms; }
 
       /* Picture-in-Picture Button */
       .pip-button {
