@@ -453,29 +453,6 @@ export default function App() {
     }
   };
 
-  const enablePictureInPicture = async () => {
-    const localVideo = document.getElementById('localVideo') as HTMLVideoElement;
-    if (!localVideo) {
-      showNotification('Видео не найдено');
-      return;
-    }
-
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-        appStore.setPipEnabled(false);
-        showNotification('PiP выключен');
-      } else {
-        await localVideo.requestPictureInPicture();
-        appStore.setPipEnabled(true);
-        showNotification('PiP включен');
-      }
-    } catch (error) {
-      console.error('PiP error:', error);
-      showNotification('PiP недоступен');
-    }
-  };
-
   onMount(() => {
     checkUrlParams();
     appStore.setShowProgress(true);
@@ -551,7 +528,7 @@ export default function App() {
         </header>
 
         <div class="main-content">
-          <VideoGrid localStream={media.localStream} onEnablePiP={enablePictureInPicture} />
+          <VideoGrid localStream={media.localStream} />
           <div class="participants-section" id="participantsSection" style={IS_MOBILE ? 'display: none !important;' : ''}>
             <Chat />
           </div>

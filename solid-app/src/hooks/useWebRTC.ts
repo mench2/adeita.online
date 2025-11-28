@@ -291,6 +291,25 @@ export function createRemoteVideoElement(peerId: string): HTMLElement {
   video.id = `remoteVideo-${peerId}`;
   
   videoContainer.appendChild(video);
+  
+  // Кнопка PiP для удаленного видео
+  const pipButton = document.createElement('button');
+  pipButton.className = 'pip-button';
+  pipButton.title = 'Picture-in-Picture';
+  pipButton.textContent = '📺';
+  pipButton.onclick = async () => {
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await video.requestPictureInPicture();
+      }
+    } catch (error) {
+      console.error('PiP error:', error);
+    }
+  };
+  videoContainer.appendChild(pipButton);
+  
   const av = document.createElement('div');
   av.className = 'avatar';
   const userName = appStore.userNames().get(peerId) || '•';

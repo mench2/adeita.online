@@ -77,7 +77,6 @@ function updateVideoGridLayout() {
 
 export default function VideoGrid(props: { 
   localStream: Accessor<MediaStream | null>;
-  onEnablePiP: () => void;
 }) {
   let videosGrid!: HTMLDivElement;
   let localVideoContainer!: HTMLDivElement;
@@ -186,9 +185,6 @@ export default function VideoGrid(props: {
     <div class="video-section">
       <div class="videos-grid" id="videosGrid" ref={videosGrid}>
         <div class="video-container local-video" ref={localVideoContainer}>
-          <button class="pip-button" onClick={props.onEnablePiP} title="Picture-in-Picture">
-            📺
-          </button>
           <div class="video-label">
             <div class="mic-status" id="localMicStatus"></div>
           </div>
