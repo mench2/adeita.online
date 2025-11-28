@@ -55,6 +55,7 @@ export default function Controls(props: {
   };
 
   const toggleQualityMenu = () => {
+    console.log('Controls: toggleQualityMenu called, current state:', showQualityMenu());
     setShowQualityMenu(!showQualityMenu());
   };
 

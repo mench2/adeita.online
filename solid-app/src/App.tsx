@@ -170,34 +170,50 @@ export default function App() {
 
   const addPeer = async (peerId: string) => {
     if (peersStore.hasPeer(peerId)) {
-      console.log(`Peer ${peerId} already exists`);
+      console.log(`[App] Peer ${peerId} already exists, skipping`);
       return;
     }
-    console.log(`Adding peer ${peerId}`);
+    console.log(`[App] Adding peer ${peerId}`);
     appStore.setShowProgress(true);
     appStore.setProgressPercent(10);
     appStore.setProgressText('Creating connection...');
     
     const videosGrid = document.getElementById('videosGrid');
     if (videosGrid) {
+      console.log(`[App] Creating video element for ${peerId}`);
       const videoContainer = createRemoteVideoElement(peerId);
       videosGrid.appendChild(videoContainer);
+      console.log(`[App] Video element added to grid for ${peerId}`);
+    } else {
+      console.error(`[App] videosGrid not found!`);
     }
     
     const peer = createPeerConnection(peerId, media.localStream() || null);
     peersStore.addPeer(peerId, peer);
+    console.log(`[App] Peer ${peerId} added to store`);
     
     // Обновляем качество видео при добавлении участника
     await updateVideoQualityForParticipantCount();
   };
 
   const onPeerJoined = (socketId: string) => {
+    console.log(`[App] onPeerJoined called for: ${socketId}`);
+    const socket = getSocket();
+    console.log(`[App] Our socket ID: ${socket?.id}`);
+    console.log(`[App] Current peers:`, peersStore.getAllPeerIds());
+    
     addPeer(socketId);
+    
     setTimeout(async () => {
       const socket = getSocket();
-      if (peersStore.hasPeer(socketId) && socket?.id && socket.id < socketId) {
-        console.log(`Calling new peer ${socketId}`);
+      const shouldCall = socket?.id && socket.id < socketId;
+      console.log(`[App] Should we call ${socketId}? ${shouldCall} (our ID: ${socket?.id})`);
+      
+      if (peersStore.hasPeer(socketId) && shouldCall) {
+        console.log(`[App] Calling new peer ${socketId}`);
         await callPeerWithRetry(socketId);
+      } else {
+        console.log(`[App] Waiting for peer ${socketId} to call us`);
       }
     }, 1000);
   };

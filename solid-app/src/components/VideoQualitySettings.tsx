@@ -30,7 +30,9 @@ export default function VideoQualitySettings(props: VideoQualitySettingsProps) {
   };
 
   const handleToggle = (e: MouseEvent) => {
+    console.log('VideoQuality: handleToggle clicked');
     e.stopPropagation(); // Предотвращаем закрытие меню
+    e.preventDefault();
     props.onToggleQualityMenu();
   };
 
