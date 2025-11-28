@@ -29,10 +29,6 @@ function updateVideoGridLayout() {
     requestAnimationFrame(() => {
       videosGrid.className = 'videos-grid';
       
-      // Удаляем плейсхолдеры одним махом
-      const placeholders = videosGrid.querySelectorAll('.video-container.placeholder');
-      placeholders.forEach(n => n.remove());
-      
       const localContainer = videosGrid.querySelector('.video-container.local-video');
       if (localContainer) {
         localContainer.classList.remove('placeholder');
@@ -40,13 +36,27 @@ function updateVideoGridLayout() {
         if (localAv) localAv.remove();
       }
       
-      const realTiles = videosGrid.querySelectorAll('.video-container').length;
-      const placeholdersToAdd = Math.max(0, 4 - realTiles);
+      // Подсчитываем реальные видео (локальное + удаленные, без placeholder'ов)
+      const realTiles = videosGrid.querySelectorAll('.video-container:not(.placeholder)').length;
+      const currentPlaceholders = videosGrid.querySelectorAll('.video-container.placeholder').length;
+      const targetPlaceholders = Math.max(0, 4 - realTiles);
       
-      // Создаем fragment для batch вставки
-      if (placeholdersToAdd > 0) {
+      // Удаляем лишние placeholder'ы
+      if (currentPlaceholders > targetPlaceholders) {
+        const placeholdersToRemove = videosGrid.querySelectorAll('.video-container.placeholder');
+        const removeCount = currentPlaceholders - targetPlaceholders;
+        for (let i = 0; i < removeCount; i++) {
+          if (placeholdersToRemove[i]) {
+            placeholdersToRemove[i].remove();
+          }
+        }
+      }
+      
+      // Добавляем недостающие placeholder'ы
+      if (currentPlaceholders < targetPlaceholders) {
         const fragment = document.createDocumentFragment();
-        for (let i = 0; i < placeholdersToAdd; i++) {
+        const addCount = targetPlaceholders - currentPlaceholders;
+        for (let i = 0; i < addCount; i++) {
           const ph = document.createElement('div');
           ph.className = 'video-container placeholder';
           fragment.appendChild(ph);

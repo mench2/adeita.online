@@ -7,7 +7,7 @@ interface VideoQualitySettingsProps {
   onQualityChange: (quality: VideoQualityPreset) => void;
   currentQuality: () => VideoQualityPreset;
   showQualityMenu: () => boolean;
-  onToggleQualityMenu: (e?: Event) => void;
+  onToggleQualityMenu: () => void;
 }
 
 export default function VideoQualitySettings(props: VideoQualitySettingsProps) {
@@ -23,15 +23,15 @@ export default function VideoQualitySettings(props: VideoQualitySettingsProps) {
     return current ? `${current.label}` : 'Качество';
   };
 
-  const handleQualitySelect = (e: Event, quality: VideoQualityPreset) => {
+  const handleQualitySelect = (e: MouseEvent, quality: VideoQualityPreset) => {
     e.stopPropagation(); // Предотвращаем закрытие меню
     props.onQualityChange(quality);
     // Не закрываем меню, пользователь сам закроет кнопкой "Назад"
   };
 
-  const handleToggle = (e: Event) => {
+  const handleToggle = (e: MouseEvent) => {
     e.stopPropagation(); // Предотвращаем закрытие меню
-    props.onToggleQualityMenu(e);
+    props.onToggleQualityMenu();
   };
 
   return (

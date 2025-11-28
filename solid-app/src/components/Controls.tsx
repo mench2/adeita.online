@@ -54,11 +54,7 @@ export default function Controls(props: {
     }
   };
 
-  const toggleQualityMenu = (e?: Event) => {
-    // Предотвращаем всплытие события, чтобы не закрылось основное меню
-    if (e) {
-      e.stopPropagation();
-    }
+  const toggleQualityMenu = () => {
     setShowQualityMenu(!showQualityMenu());
   };
 
