@@ -41,10 +41,15 @@ function updateVideoGridLayout() {
       const currentPlaceholders = videosGrid.querySelectorAll('.video-container.placeholder').length;
       const targetPlaceholders = Math.max(0, 4 - realTiles);
       
+      console.log('[updateVideoGridLayout] Real tiles:', realTiles);
+      console.log('[updateVideoGridLayout] Current placeholders:', currentPlaceholders);
+      console.log('[updateVideoGridLayout] Target placeholders:', targetPlaceholders);
+      
       // Удаляем лишние placeholder'ы
       if (currentPlaceholders > targetPlaceholders) {
         const placeholdersToRemove = videosGrid.querySelectorAll('.video-container.placeholder');
         const removeCount = currentPlaceholders - targetPlaceholders;
+        console.log('[updateVideoGridLayout] Removing', removeCount, 'placeholders');
         for (let i = 0; i < removeCount; i++) {
           if (placeholdersToRemove[i]) {
             placeholdersToRemove[i].remove();
@@ -56,6 +61,7 @@ function updateVideoGridLayout() {
       if (currentPlaceholders < targetPlaceholders) {
         const fragment = document.createDocumentFragment();
         const addCount = targetPlaceholders - currentPlaceholders;
+        console.log('[updateVideoGridLayout] Adding', addCount, 'placeholders');
         for (let i = 0; i < addCount; i++) {
           const ph = document.createElement('div');
           ph.className = 'video-container placeholder';
@@ -123,17 +129,30 @@ export default function VideoGrid(props: {
     const peerIds = peersStore.getAllPeerIds();
     console.log('[VideoGrid] Peers changed:', peerIds);
     peerIds.forEach(peerId => {
-      if (!document.getElementById(`video-${peerId}`)) {
+      const existingElement = document.getElementById(`video-${peerId}`);
+      if (!existingElement) {
         const container = createRemoteVideoElement(peerId);
         videosGrid.appendChild(container);
         console.log('[VideoGrid] Added video element for peer:', peerId);
+      } else {
+        console.log('[VideoGrid] Video element already exists for peer:', peerId);
       }
     });
     
     // Логируем текущее состояние grid
     const allContainers = videosGrid.querySelectorAll('.video-container');
+    const realVideos = videosGrid.querySelectorAll('.video-container:not(.placeholder)');
+    const placeholders = videosGrid.querySelectorAll('.video-container.placeholder');
+    
     console.log('[VideoGrid] Total containers:', allContainers.length);
+    console.log('[VideoGrid] Real videos:', realVideos.length);
+    console.log('[VideoGrid] Placeholders:', placeholders.length);
     console.log('[VideoGrid] Grid computed style:', window.getComputedStyle(videosGrid).gridTemplateColumns);
+    
+    // Логируем все контейнеры
+    allContainers.forEach((container, index) => {
+      console.log(`[VideoGrid] Container ${index}:`, container.className, container.id);
+    });
     
     updateVideoGridLayout();
   });
