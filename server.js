@@ -30,11 +30,11 @@ const server = http.createServer(app);
 const VERBOSE_LOGS = process.env.VERBOSE_LOGS === '1' || process.env.VERBOSE_LOGS === 'true';
 const io = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
-  pingTimeout: 2000, // ОЧЕНЬ быстрое обнаружение (2 секунды)
-  pingInterval: 1000, // ОЧЕНЬ частая проверка (1 секунда)
+  pingTimeout: 10000, // 10 секунд - баланс между скоростью и стабильностью
+  pingInterval: 5000, // 5 секунд - разумная частота проверки
   transports: ['websocket', 'polling'], // Поддерживаем оба транспорта
   allowEIO3: true, // Совместимость с старыми версиями
-  upgradeTimeout: 1000, // Быстрое обновление соединения
+  upgradeTimeout: 3000, // 3 секунды для обновления соединения
   maxHttpBufferSize: 1e6 // Увеличиваем буфер для быстрой передачи
 });
 
@@ -45,8 +45,8 @@ const socketIdToUserName = new Map();
 // Map для отслеживания активности пользователей: socketId -> { lastActivity, messageCount, joinTime, lastPing }
 const userActivity = new Map();
 // Интервал для проверки неактивных пользователей
-const INACTIVITY_CHECK_INTERVAL = 2000; // 2 секунды (ОЧЕНЬ часто)
-const MAX_INACTIVITY_TIME = 5000; // 5 секунд (МАКСИМАЛЬНО агрессивно)
+const INACTIVITY_CHECK_INTERVAL = 10000; // 10 секунд - разумный баланс
+const MAX_INACTIVITY_TIME = 30000; // 30 секунд - учитываем мобильные сети
 // Настройки защиты от ботов
 const BOT_PROTECTION = {
   MAX_MESSAGES_PER_MINUTE: 10, // Максимум сообщений в минуту

@@ -47,8 +47,16 @@ export function createPeerConnection(peerId: string, localStream: MediaStream | 
     }
     if (e.track) {
       e.track.onended = () => {
-        console.log(`INSTANT REMOVAL: Track ended for ${peerId}`);
-        removePeer(peerId);
+        console.log(`Track ended for ${peerId}`);
+        // Не удаляем сразу - может быть временная проблема
+        setTimeout(() => {
+          if (peersStore.hasPeer(peerId)) {
+            const peer = peersStore.getPeer(peerId);
+            if (peer && peer.pc.connectionState === 'disconnected') {
+              removePeer(peerId);
+            }
+          }
+        }, 2000);
       };
     }
   };
@@ -79,8 +87,16 @@ export function createPeerConnection(peerId: string, localStream: MediaStream | 
       }, 3000);
     } else if (pc.connectionState === 'disconnected') {
       console.warn(`WebRTC connection disconnected with ${peerId}`);
-      console.log(`INSTANT REMOVAL: WebRTC disconnected with ${peerId}`);
-      removePeer(peerId);
+      // Даем 3 секунды на переподключение
+      setTimeout(() => {
+        if (peersStore.hasPeer(peerId)) {
+          const peer = peersStore.getPeer(peerId);
+          if (peer && peer.pc.connectionState === 'disconnected') {
+            console.log(`Removing peer ${peerId} after disconnect timeout`);
+            removePeer(peerId);
+          }
+        }
+      }, 3000);
     }
   };
   
@@ -88,12 +104,21 @@ export function createPeerConnection(peerId: string, localStream: MediaStream | 
     console.log(`pc.iceConnectionState with ${peerId}:`, pc.iceConnectionState);
     if (pc.iceConnectionState === 'failed') {
       console.error(`ICE connection failed for ${peerId}`);
-      console.log(`INSTANT REMOVAL: ICE failed with ${peerId}`);
-      removePeer(peerId);
+      // Пытаемся переподключиться
+      setTimeout(async () => {
+        if (peersStore.hasPeer(peerId)) {
+          try {
+            await callPeerWithRetry(peerId, 1);
+          } catch (error) {
+            console.error(`Failed to reconnect ${peerId}:`, error);
+            removePeer(peerId);
+          }
+        }
+      }, 2000);
     }
     if (pc.iceConnectionState === 'disconnected') {
-      console.log(`INSTANT REMOVAL: ICE disconnected with ${peerId}`);
-      removePeer(peerId);
+      console.warn(`ICE disconnected with ${peerId}, waiting for reconnection...`);
+      // Не удаляем сразу - ICE может восстановиться
     }
     if (pc.iceConnectionState === 'connected') {
       const peer = peersStore.getPeer(peerId);

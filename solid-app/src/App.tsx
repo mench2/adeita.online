@@ -50,9 +50,8 @@ export default function App() {
       console.log('🌐 Тип подключения из URL: Через сервер');
     }
     
-    // Инициализация E2EE
+    // Инициализация E2EE - импорт ключа из URL
     if (keyParam) {
-      // Импортируем ключ из URL
       try {
         const key = await importKey(keyParam);
         appStore.setE2eeKey(key);
@@ -61,18 +60,8 @@ export default function App() {
       } catch (error) {
         console.error('Failed to import E2EE key from URL:', error);
       }
-    } else {
-      // Генерируем новый ключ для создателя комнаты
-      try {
-        const key = await generateRoomKey();
-        const keyString = await exportKey(key);
-        appStore.setE2eeKey(key);
-        appStore.setE2eeKeyString(keyString);
-        console.log('🔒 Новый E2EE ключ сгенерирован');
-      } catch (error) {
-        console.error('Failed to generate E2EE key:', error);
-      }
     }
+    // Ключ будет сгенерирован только при создании комнаты (в createNewRoom)
 
     if (tgStartParam) {
       appStore.setRoomId(tgStartParam);
@@ -112,6 +101,19 @@ export default function App() {
     const newRoomId = appStore.generateRoomId();
     appStore.setRoomId(newRoomId);
     appStore.setIsRoomCreator(true);
+    
+    // Генерируем E2EE ключ только при создании комнаты
+    if (!appStore.e2eeKey()) {
+      try {
+        const key = await generateRoomKey();
+        const keyString = await exportKey(key);
+        appStore.setE2eeKey(key);
+        appStore.setE2eeKeyString(keyString);
+        console.log('🔒 E2EE ключ сгенерирован для новой комнаты');
+      } catch (error) {
+        console.error('Failed to generate E2EE key:', error);
+      }
+    }
     
     // Обновляем URL сразу после создания комнаты
     const directParam = appStore.useDirectConnection() ? '&direct=1' : '';
