@@ -54,7 +54,11 @@ export default function Controls(props: {
     }
   };
 
-  const toggleQualityMenu = () => {
+  const toggleQualityMenu = (e?: Event) => {
+    // Предотвращаем всплытие события, чтобы не закрылось основное меню
+    if (e) {
+      e.stopPropagation();
+    }
     setShowQualityMenu(!showQualityMenu());
   };
 
@@ -95,6 +99,8 @@ export default function Controls(props: {
       const clickedInside = settingsSubmenu?.contains(target) || settingsBtn?.contains(target);
       if (!clickedInside && showSettings()) {
         closeSettingsMenu();
+        // При закрытии основного меню также закрываем меню качества
+        setShowQualityMenu(false);
       }
     };
     document.addEventListener('click', handleClick);

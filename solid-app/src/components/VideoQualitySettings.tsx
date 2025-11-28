@@ -7,7 +7,7 @@ interface VideoQualitySettingsProps {
   onQualityChange: (quality: VideoQualityPreset) => void;
   currentQuality: () => VideoQualityPreset;
   showQualityMenu: () => boolean;
-  onToggleQualityMenu: () => void;
+  onToggleQualityMenu: (e?: Event) => void;
 }
 
 export default function VideoQualitySettings(props: VideoQualitySettingsProps) {
@@ -23,16 +23,22 @@ export default function VideoQualitySettings(props: VideoQualitySettingsProps) {
     return current ? `${current.label}` : 'Качество';
   };
 
-  const handleQualitySelect = (quality: VideoQualityPreset) => {
+  const handleQualitySelect = (e: Event, quality: VideoQualityPreset) => {
+    e.stopPropagation(); // Предотвращаем закрытие меню
     props.onQualityChange(quality);
     // Не закрываем меню, пользователь сам закроет кнопкой "Назад"
+  };
+
+  const handleToggle = (e: Event) => {
+    e.stopPropagation(); // Предотвращаем закрытие меню
+    props.onToggleQualityMenu(e);
   };
 
   return (
     <>
       {/* Показываем либо кнопку "Качество", либо варианты качества */}
       {!props.showQualityMenu() ? (
-        <button class="settings-pill" onClick={props.onToggleQualityMenu}>
+        <button class="settings-pill" onClick={handleToggle}>
           <span class="icon">📹</span>
           <span>{getCurrentLabel()}</span>
         </button>
@@ -41,14 +47,14 @@ export default function VideoQualitySettings(props: VideoQualitySettingsProps) {
           {qualities.map(q => (
             <button
               class={`settings-pill quality-option ${props.currentQuality() === q.value ? 'active' : ''}`}
-              onClick={() => handleQualitySelect(q.value)}
+              onClick={(e) => handleQualitySelect(e, q.value)}
             >
               <span class="icon">{q.icon}</span>
               <span>{q.label}</span>
             </button>
           ))}
           {/* Кнопка "Назад" */}
-          <button class="settings-pill back-button" onClick={props.onToggleQualityMenu}>
+          <button class="settings-pill back-button" onClick={handleToggle}>
             <span class="icon">←</span>
             <span>Назад</span>
           </button>
