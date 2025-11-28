@@ -178,15 +178,8 @@ export default function App() {
     appStore.setProgressPercent(10);
     appStore.setProgressText('Creating connection...');
     
-    const videosGrid = document.getElementById('videosGrid');
-    if (videosGrid) {
-      console.log(`[App] Creating video element for ${peerId}`);
-      const videoContainer = createRemoteVideoElement(peerId);
-      videosGrid.appendChild(videoContainer);
-      console.log(`[App] Video element added to grid for ${peerId}`);
-    } else {
-      console.error(`[App] videosGrid not found!`);
-    }
+    // НЕ добавляем видео элемент здесь - это делает VideoGrid.tsx через createEffect
+    // Просто создаем peer connection и добавляем в store
     
     const peer = createPeerConnection(peerId, media.localStream() || null);
     peersStore.addPeer(peerId, peer);
