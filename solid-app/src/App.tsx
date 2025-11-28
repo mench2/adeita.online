@@ -114,6 +114,14 @@ export default function App() {
     const newRoomId = appStore.generateRoomId();
     appStore.setRoomId(newRoomId);
     appStore.setIsRoomCreator(true);
+    
+    // Обновляем URL сразу после создания комнаты
+    const directParam = appStore.useDirectConnection() ? '&direct=1' : '';
+    const keyParam = appStore.e2eeKeyString() ? `&key=${appStore.e2eeKeyString()}` : '';
+    const newUrl = `${window.location.origin}${window.location.pathname}?room=${newRoomId}${directParam}${keyParam}`;
+    window.history.pushState({ room: newRoomId }, '', newUrl);
+    console.log('📝 URL обновлен:', newUrl);
+    
     try {
       console.log(`Creating new room: ${newRoomId}`);
       appStore.setShowProgress(true);
