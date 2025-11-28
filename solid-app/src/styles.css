@@ -1207,9 +1207,9 @@
         min-width: 400px;
       }
 
-      /* Telegram WebApp: опускаем селектор типа подключения */
+      /* Telegram WebApp: прижимаем селектор типа подключения */
       .tg-webapp .connection-type-selector-compact {
-        top: 100px;
+        top: 60px;
         right: 12px;
         bottom: auto;
         left: auto;
@@ -1320,9 +1320,9 @@
         transition: all 0.3s ease;
       }
 
-      /* Telegram WebApp: опускаем индикаторы ниже */
+      /* Telegram WebApp: прижимаем к верху с учетом системной шапки */
       .tg-webapp .e2ee-indicator {
-        top: 100px;
+        top: 60px;
       }
 
       /* Connection Quality Indicator */
@@ -1343,9 +1343,9 @@
         transition: all 0.3s ease;
       }
 
-      /* Telegram WebApp: опускаем индикатор качества ниже */
+      /* Telegram WebApp: прижимаем индикатор качества */
       .tg-webapp .connection-quality-indicator {
-        top: 150px;
+        top: 100px;
       }
 
       .quality-icon {
@@ -1456,9 +1456,9 @@
           font-size: 11px;
         }
 
-        /* Telegram WebApp на мобильных: опускаем еще ниже */
+        /* Telegram WebApp на мобильных: прижимаем к верху */
         .tg-webapp .e2ee-indicator {
-          top: 90px;
+          top: 60px;
         }
 
         .connection-quality-indicator {
@@ -1468,9 +1468,9 @@
           gap: 8px;
         }
 
-        /* Telegram WebApp на мобильных: опускаем индикатор качества */
+        /* Telegram WebApp на мобильных: прижимаем индикатор качества */
         .tg-webapp .connection-quality-indicator {
-          top: 135px;
+          top: 100px;
         }
 
         .quality-icon {
@@ -1504,9 +1504,9 @@
           border-radius: 12px;
         }
 
-        /* Telegram WebApp на мобильных: опускаем селектор типа подключения */
+        /* Telegram WebApp на мобильных: прижимаем селектор типа подключения */
         .tg-webapp .connection-type-selector-compact {
-          top: 90px;
+          top: 60px;
         }
 
         .connection-compact-row {
