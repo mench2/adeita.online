@@ -90,7 +90,7 @@ export default function StatusBar() {
   const isLocked = () => appStore.roomId() && appStore.showControls();
 
   return (
-    <Show when={appStore.showControls()}>
+    <Show when={appStore.roomId()}>
       <div class="status-bar">
         {/* E2EE индикатор */}
         <div class="status-bar-item e2ee-status">
