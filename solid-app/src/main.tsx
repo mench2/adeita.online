@@ -6,6 +6,7 @@ const root = document.getElementById('root')!;
 
 if (IS_TELEGRAM && typeof document !== 'undefined') {
   document.documentElement.classList.add('tg-webapp');
+  console.log('✅ Telegram WebApp detected, class "tg-webapp" added to <html>');
   let lastTouchEnd = 0;
   document.addEventListener('touchend', (e) => {
     const now = Date.now();
