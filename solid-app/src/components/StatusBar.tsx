@@ -88,48 +88,47 @@ export default function StatusBar() {
   };
 
   const isLocked = () => appStore.roomId() && appStore.showControls();
+  const inCall = () => appStore.roomId() && appStore.showControls();
 
   return (
-    <Show when={appStore.roomId()}>
-      <div class="status-bar">
-        {/* E2EE индикатор */}
+    <div class="status-bar">
+      {/* E2EE индикатор - только в звонке */}
+      <Show when={inCall()}>
         <div class="status-bar-item e2ee-status">
           <span class="status-icon">🔒</span>
           <span class="status-text">Зашифровано</span>
         </div>
-
-        {/* Разделитель */}
         <div class="status-bar-divider"></div>
+      </Show>
 
-        {/* Тумблер или пинг */}
-        <Show
-          when={peersStore.peers().size > 0}
-          fallback={
-            <div class="status-bar-item connection-type">
-              <span class="status-text">{appStore.useDirectConnection() ? 'Секретное' : 'Через сервер'}</span>
-              <button 
-                class={`connection-toggle-mini ${isLocked() ? 'locked' : ''}`}
-                onClick={handleToggle}
-                disabled={isLocked()}
-                title={isLocked() ? 'Нельзя изменить во время звонка' : 'Переключить тип подключения'}
-              >
-                <div class={`toggle-slider-mini ${appStore.useDirectConnection() ? 'direct' : ''}`}>
-                  <span class="toggle-icon-mini">{appStore.useDirectConnection() ? '🔒' : '🌐'}</span>
-                </div>
-              </button>
-            </div>
-          }
-        >
-          <div class="status-bar-item ping-status">
-            <span class="status-icon" style={{ color: getQualityColor() }}>📶</span>
-            <span class="status-text" style={{ color: getQualityColor() }}>
-              {ping()}ms
-              {packetLoss() > 0 && ` • ${packetLoss()}%`}
-            </span>
+      {/* Тумблер или пинг */}
+      <Show
+        when={peersStore.peers().size > 0}
+        fallback={
+          <div class="status-bar-item connection-type">
+            <span class="status-text">{appStore.useDirectConnection() ? 'Секретное' : 'Через сервер'}</span>
+            <button 
+              class={`connection-toggle-mini ${isLocked() ? 'locked' : ''}`}
+              onClick={handleToggle}
+              disabled={isLocked()}
+              title={isLocked() ? 'Нельзя изменить во время звонка' : 'Переключить тип подключения'}
+            >
+              <div class={`toggle-slider-mini ${appStore.useDirectConnection() ? 'direct' : ''}`}>
+                <span class="toggle-icon-mini">{appStore.useDirectConnection() ? '🔒' : '🌐'}</span>
+              </div>
+            </button>
           </div>
-        </Show>
-      </div>
-    </Show>
+        }
+      >
+        <div class="status-bar-item ping-status">
+          <span class="status-icon" style={{ color: getQualityColor() }}>📶</span>
+          <span class="status-text" style={{ color: getQualityColor() }}>
+            {ping()}ms
+            {packetLoss() > 0 && ` • ${packetLoss()}%`}
+          </span>
+        </div>
+      </Show>
+    </div>
   );
 }
 
