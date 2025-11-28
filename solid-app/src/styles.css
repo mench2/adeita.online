@@ -1208,18 +1208,6 @@
         min-width: 400px;
       }
 
-      /* Telegram WebApp: прижимаем селектор типа подключения */
-      .tg-webapp .connection-type-selector-compact {
-        top: 60px !important;
-        right: 12px !important;
-        bottom: auto !important;
-        left: auto !important;
-        transform: none !important;
-        padding: 10px 12px;
-        min-width: 180px;
-        border-radius: 12px;
-      }
-
       .connection-compact-row {
         display: flex;
         align-items: center;
@@ -1395,7 +1383,7 @@
 
       @media (max-width: 768px) {
         .status-bar {
-          top: 12px;
+          top: 80px;
           left: 50%;
           transform: translateX(-50%);
           padding: 8px 12px;
