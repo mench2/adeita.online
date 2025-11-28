@@ -1287,7 +1287,176 @@
       }
 
       /* Mobile: компактно в правом верхнем углу */
+      /* Connection Quality Indicator */
+      .connection-quality-indicator {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(26, 26, 26, 0.95);
+        border: 1px solid #2a2a2a;
+        border-radius: 12px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        z-index: 100;
+        transition: all 0.3s ease;
+      }
+
+      .quality-icon {
+        font-size: 20px;
+        line-height: 1;
+      }
+
+      .quality-details {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .quality-text {
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .quality-stats {
+        font-size: 11px;
+        color: #8a8a8a;
+      }
+
+      .quality-stats .ping {
+        font-weight: 600;
+      }
+
+      .quality-stats .packet-loss {
+        color: #dc2626;
+      }
+
+      /* Video Quality Settings */
+      .video-quality-settings {
+        background: rgba(40, 40, 40, 0.95);
+        border-radius: 12px;
+        padding: 12px;
+        margin-top: 8px;
+      }
+
+      .quality-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #8a8a8a;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+
+      .quality-options {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .quality-option {
+        background: #2a2a2a;
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+
+      .quality-option:hover {
+        background: #3a3a3a;
+        border-color: #515c30;
+      }
+
+      .quality-option.active {
+        background: #515c30;
+        border-color: #616f34;
+        box-shadow: 0 0 12px rgba(81, 92, 48, 0.3);
+      }
+
+      .quality-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff;
+      }
+
+      .quality-description {
+        font-size: 10px;
+        color: #8a8a8a;
+      }
+
+      .quality-option.active .quality-description {
+        color: #d0f9bb;
+      }
+
+      /* Picture-in-Picture Button */
+      .pip-button {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(26, 26, 26, 0.8);
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 16px;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.2s ease;
+        z-index: 10;
+        backdrop-filter: blur(8px);
+      }
+
+      .video-container.local-video:hover .pip-button {
+        opacity: 1;
+      }
+
+      .pip-button:hover {
+        background: rgba(81, 92, 48, 0.9);
+        border-color: #515c30;
+        transform: scale(1.05);
+      }
+
+      /* Settings Pill Group для вложенных элементов */
+      .settings-pill-group {
+        background: transparent;
+        border: none;
+        padding: 0;
+        display: block;
+      }
+
       @media (max-width: 768px) {
+        .connection-quality-indicator {
+          top: 12px;
+          left: 12px;
+          padding: 8px 12px;
+          gap: 8px;
+        }
+
+        .quality-icon {
+          font-size: 16px;
+        }
+
+        .quality-text {
+          font-size: 12px;
+        }
+
+        .quality-stats {
+          font-size: 10px;
+        }
+
+        .pip-button {
+          top: 6px;
+          right: 6px;
+          padding: 4px 8px;
+          font-size: 14px;
+        }
+
         .connection-type-selector-compact {
           /* Мобильная версия: правый верхний угол */
           top: 12px;
@@ -1336,4 +1505,3 @@
           padding: 4px 0 0 0;
         }
       }
-    </style>

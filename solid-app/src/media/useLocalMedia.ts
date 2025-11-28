@@ -1,14 +1,16 @@
-import { createSignal, onCleanup, Accessor } from 'solid-js';
+import { createSignal, onCleanup, Accessor, createEffect } from 'solid-js';
 import { IS_MOBILE, IS_ANDROID, IS_IOS, IS_SAFARI, IS_FIREFOX, IS_EDGE, IS_TELEGRAM } from '../utils/detection';
 import { videoQualitySettings, getVideoDeviceIdByFacing } from '../utils/webrtc';
 import { showNotification } from '../utils/notifications';
 import * as peersStore from '../stores/peersStore';
 import * as appStore from '../stores/appStore';
+import { NoiseSuppressionProcessor } from '../utils/audioProcessor';
 
 export function createLocalMedia() {
   const [localStream, setLocalStream] = createSignal<MediaStream | null>(null);
   const [flashlightEnabled, setFlashlightEnabled] = createSignal(false);
   const [currentVideoQuality, setCurrentVideoQuality] = createSignal<keyof typeof videoQualitySettings>('medium');
+  const [noiseProcessor, setNoiseProcessor] = createSignal<NoiseSuppressionProcessor | null>(null);
 
   const torchAux: {
     stream: MediaStream | null;
@@ -128,27 +130,53 @@ export function createLocalMedia() {
   async function getLocalStream(quality: keyof typeof videoQualitySettings = 'medium') {
     try {
       const participantCount = 1 + peersStore.peers().size;
+      const qualityPreset = appStore.videoQuality();
       let videoConstraints: MediaTrackConstraints;
       
-      if (participantCount >= 4) {
+      // Определяем качество видео на основе выбранного пресета
+      if (qualityPreset === 'auto') {
+        // Автоматическое качество на основе количества участников
+        if (participantCount >= 4) {
+          videoConstraints = {
+            width: { ideal: 480, max: 640 },
+            height: { ideal: 360, max: 480 },
+            frameRate: { ideal: 15, max: 20 },
+            facingMode: { ideal: 'user' }
+          };
+        } else if (participantCount >= 3) {
+          videoConstraints = {
+            width: { ideal: 640, max: 800 },
+            height: { ideal: 480, max: 600 },
+            frameRate: { ideal: 20, max: 25 },
+            facingMode: { ideal: 'user' }
+          };
+        } else {
+          videoConstraints = {
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+            frameRate: { ideal: 30, max: 30 },
+            facingMode: { ideal: 'user' }
+          };
+        }
+      } else if (qualityPreset === '1080p') {
         videoConstraints = {
-          width: { ideal: 480, max: 640 },
-          height: { ideal: 360, max: 480 },
-          frameRate: { ideal: 15, max: 20 },
-          facingMode: { ideal: 'user' }
-        };
-      } else if (participantCount >= 3) {
-        videoConstraints = {
-          width: { ideal: 640, max: 800 },
-          height: { ideal: 480, max: 600 },
-          frameRate: { ideal: 20, max: 25 },
-          facingMode: { ideal: 'user' }
-        };
-      } else {
-        videoConstraints = {
-          width: { ideal: 1280, max: 1920 },
-          height: { ideal: 720, max: 1080 },
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 },
           frameRate: { ideal: 30, max: 30 },
+          facingMode: { ideal: 'user' }
+        };
+      } else if (qualityPreset === '720p') {
+        videoConstraints = {
+          width: { ideal: 1280, max: 1280 },
+          height: { ideal: 720, max: 720 },
+          frameRate: { ideal: 30, max: 30 },
+          facingMode: { ideal: 'user' }
+        };
+      } else { // 480p
+        videoConstraints = {
+          width: { ideal: 640, max: 640 },
+          height: { ideal: 480, max: 480 },
+          frameRate: { ideal: 15, max: 20 },
           facingMode: { ideal: 'user' }
         };
       }
@@ -206,7 +234,16 @@ export function createLocalMedia() {
       }
 
       console.log('Requesting media with platform-specific constraints:', constraints);
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      // Применяем шумоподавление если включено
+      if (appStore.noiseSuppressionEnabled()) {
+        const processor = new NoiseSuppressionProcessor();
+        stream = await processor.processStream(stream);
+        setNoiseProcessor(processor);
+        console.log('🎙️ Шумоподавление применено к потоку');
+      }
+      
       setLocalStream(stream);
       setCurrentVideoQuality(quality);
       appStore.setError(null);
@@ -299,10 +336,55 @@ export function createLocalMedia() {
     if (appStore.isScreenSharing()) stopScreenShare(); else startScreenShare();
   };
 
+  // Функция для переключения шумоподавления
+  const toggleNoiseSuppression = async () => {
+    const currentStream = localStream();
+    if (!currentStream) return;
+
+    const wasEnabled = appStore.noiseSuppressionEnabled();
+    appStore.setNoiseSuppressionEnabled(!wasEnabled);
+
+    if (!wasEnabled) {
+      // Включаем шумоподавление
+      const processor = new NoiseSuppressionProcessor();
+      const processedStream = await processor.processStream(currentStream);
+      setNoiseProcessor(processor);
+      
+      // Заменяем аудио треки во всех соединениях
+      for (const [peerId, peer] of peersStore.peers().entries()) {
+        const audioSender = peer.pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+        if (audioSender && processedStream.getAudioTracks()[0]) {
+          await audioSender.replaceTrack(processedStream.getAudioTracks()[0]);
+        }
+      }
+      
+      setLocalStream(processedStream);
+      showNotification('🎙️ Шумоподавление включено');
+    } else {
+      // Выключаем шумоподавление
+      const processor = noiseProcessor();
+      if (processor) {
+        processor.cleanup();
+        setNoiseProcessor(null);
+      }
+      
+      // Получаем новый чистый стрим
+      await getLocalStream();
+      showNotification('🎙️ Шумоподавление выключено');
+    }
+  };
+
   onCleanup(() => {
     // Очищаем все ресурсы
     disableAuxTorch();
     applyWhiteBg(false);
+    
+    // Очищаем процессор шумоподавления
+    const processor = noiseProcessor();
+    if (processor) {
+      processor.cleanup();
+      setNoiseProcessor(null);
+    }
     
     // Останавливаем локальный стрим
     const stream = localStream();
@@ -340,6 +422,7 @@ export function createLocalMedia() {
     toggleFlashlight: () => toggleFlashlight(),
     flashlightEnabled,
     toggleScreenShare,
-    getFacing
+    getFacing,
+    toggleNoiseSuppression
   };
 }

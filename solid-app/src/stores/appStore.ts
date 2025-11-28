@@ -24,6 +24,9 @@ export const [error, setError] = createSignal<string | null>(null);
 export const [showControls, setShowControls] = createSignal(false);
 export const [showNameModal, setShowNameModal] = createSignal(false);
 export const [useDirectConnection, setUseDirectConnection] = createSignal(false);
+export const [videoQuality, setVideoQuality] = createSignal<'1080p' | '720p' | '480p' | 'auto'>('auto');
+export const [noiseSuppressionEnabled, setNoiseSuppressionEnabled] = createSignal(false);
+export const [pipEnabled, setPipEnabled] = createSignal(false);
 
 export function generateRoomId(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

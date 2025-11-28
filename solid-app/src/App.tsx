@@ -14,6 +14,8 @@ import Chat from './components/Chat';
 import NameModal from './components/NameModal';
 import Preloader from './components/Preloader';
 import ConnectionTypeSelector from './components/ConnectionTypeSelector';
+import ConnectionQualityIndicator from './components/ConnectionQualityIndicator';
+import type { VideoQualityPreset } from './components/VideoQualitySettings';
 import './styles.css';
 
 export default function App() {
@@ -381,6 +383,51 @@ export default function App() {
     }
   };
 
+  const handleQualityChange = async (quality: VideoQualityPreset) => {
+    appStore.setVideoQuality(quality);
+    showNotification(`Качество видео: ${quality}`);
+    
+    // Перезапускаем стрим с новым качеством
+    if (media.localStream()) {
+      try {
+        await media.getLocalStream();
+        
+        // Обновляем треки во всех соединениях
+        for (const [peerId, peer] of peersStore.peers().entries()) {
+          const videoSender = peer.pc.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (videoSender && media.localStream()!.getVideoTracks()[0]) {
+            await videoSender.replaceTrack(media.localStream()!.getVideoTracks()[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to change video quality:', error);
+      }
+    }
+  };
+
+  const enablePictureInPicture = async () => {
+    const localVideo = document.getElementById('localVideo') as HTMLVideoElement;
+    if (!localVideo) {
+      showNotification('Видео не найдено');
+      return;
+    }
+
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        appStore.setPipEnabled(false);
+        showNotification('PiP выключен');
+      } else {
+        await localVideo.requestPictureInPicture();
+        appStore.setPipEnabled(true);
+        showNotification('PiP включен');
+      }
+    } catch (error) {
+      console.error('PiP error:', error);
+      showNotification('PiP недоступен');
+    }
+  };
+
   onMount(() => {
     checkUrlParams();
     appStore.setShowProgress(true);
@@ -456,11 +503,13 @@ export default function App() {
         </header>
 
         <div class="main-content">
-          <VideoGrid localStream={media.localStream} />
+          <VideoGrid localStream={media.localStream} onEnablePiP={enablePictureInPicture} />
           <div class="participants-section" id="participantsSection" style={IS_MOBILE ? 'display: none !important;' : ''}>
             <Chat />
           </div>
         </div>
+        
+        <ConnectionQualityIndicator />
         
         <Show when={appStore.error()}>
           <div id="errors">
@@ -491,6 +540,8 @@ export default function App() {
           onHangup={hangup}
           flashlightEnabled={media.flashlightEnabled()}
           localStream={media.localStream}
+          onToggleNoiseSuppression={media.toggleNoiseSuppression}
+          onQualityChange={handleQualityChange}
         />
       </div>
     </>

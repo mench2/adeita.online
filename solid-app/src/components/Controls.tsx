@@ -1,6 +1,7 @@
 import { createSignal, Show, onMount, onCleanup, createEffect } from 'solid-js';
 import * as appStore from '../stores/appStore';
 import { createMediaState } from '../utils/mediaState';
+import VideoQualitySettings, { type VideoQualityPreset } from './VideoQualitySettings';
 import type { Accessor } from 'solid-js';
 
 export default function Controls(props: {
@@ -13,6 +14,8 @@ export default function Controls(props: {
   onHangup: () => void;
   flashlightEnabled: boolean;
   localStream: Accessor<MediaStream | null>;
+  onToggleNoiseSuppression: () => void;
+  onQualityChange: (quality: VideoQualityPreset) => void;
 }) {
   const mediaState = createMediaState(props.localStream);
   const [showSettings, setShowSettings] = createSignal(false);
@@ -115,6 +118,16 @@ export default function Controls(props: {
                 <img src="/icon/cameraswitch_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Swap Camera" width="20" height="20" />
                 <span>Swap</span>
               </button>
+              <button class={`settings-pill ${appStore.noiseSuppressionEnabled() ? 'active' : ''}`} onClick={props.onToggleNoiseSuppression}>
+                <span class="icon">🎙️</span>
+                <span>Шумоподавление</span>
+              </button>
+              <div class="settings-pill-group">
+                <VideoQualitySettings 
+                  onQualityChange={props.onQualityChange}
+                  currentQuality={() => appStore.videoQuality()}
+                />
+              </div>
             </div>
           </div>
           <button class="control-btn round copy-link" id="copyLinkBtn" onClick={props.onCopyLink} title="Share">
