@@ -29,8 +29,8 @@ export default function Chat() {
     
     if (!appStore.userName() && !IS_MOBILE) {
       batch(() => {
-        appStore.setPendingChatText(text);
-        appStore.setShowNameModal(true);
+      appStore.setPendingChatText(text);
+      appStore.setShowNameModal(true);
       });
       return;
     }
@@ -52,16 +52,16 @@ export default function Chat() {
         return;
       }
     } else {
-      socket?.emit('chat-message', {
-        author: appStore.userName(),
-        text: text,
-        timestamp: new Date()
-      });
+    socket?.emit('chat-message', {
+      author: appStore.userName(),
+      text: text,
+      timestamp: new Date()
+    });
     }
     
     batch(() => {
-      appStore.addChatMessage(appStore.userName(), text, true);
-      setInput('');
+    appStore.addChatMessage(appStore.userName(), text, true);
+    setInput('');
     });
   };
 

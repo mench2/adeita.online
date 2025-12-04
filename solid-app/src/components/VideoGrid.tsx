@@ -27,14 +27,14 @@ function updateVideoGridLayout() {
     
     // Используем batch для группировки DOM операций
     requestAnimationFrame(() => {
-      videosGrid.className = 'videos-grid';
+    videosGrid.className = 'videos-grid';
       
-      const localContainer = videosGrid.querySelector('.video-container.local-video');
-      if (localContainer) {
-        localContainer.classList.remove('placeholder');
-        const localAv = localContainer.querySelector('#localAvatar');
-        if (localAv) localAv.remove();
-      }
+    const localContainer = videosGrid.querySelector('.video-container.local-video');
+    if (localContainer) {
+      localContainer.classList.remove('placeholder');
+      const localAv = localContainer.querySelector('#localAvatar');
+      if (localAv) localAv.remove();
+    }
       
       // Подсчитываем реальные видео (локальное + удаленные, без placeholder'ов)
       const realTiles = videosGrid.querySelectorAll('.video-container:not(.placeholder)').length;
@@ -63,14 +63,14 @@ function updateVideoGridLayout() {
         const addCount = targetPlaceholders - currentPlaceholders;
         console.log('[updateVideoGridLayout] Adding', addCount, 'placeholders');
         for (let i = 0; i < addCount; i++) {
-          const ph = document.createElement('div');
-          ph.className = 'video-container placeholder';
+      const ph = document.createElement('div');
+      ph.className = 'video-container placeholder';
           fragment.appendChild(ph);
         }
         videosGrid.appendChild(fragment);
-      }
+    }
       
-      recalcTileSize(videosGrid);
+    recalcTileSize(videosGrid);
     });
   }, 100);
 }
@@ -138,9 +138,9 @@ export default function VideoGrid(props: {
           videosGrid.insertBefore(container, firstPlaceholder);
           console.log('[VideoGrid] Inserted video element before placeholders for peer:', peerId);
         } else {
-          videosGrid.appendChild(container);
+        videosGrid.appendChild(container);
           console.log('[VideoGrid] Appended video element for peer:', peerId);
-        }
+      }
       } else {
         console.log('[VideoGrid] Video element already exists for peer:', peerId);
       }
@@ -178,7 +178,7 @@ export default function VideoGrid(props: {
           resizeObserver = null;
         }
       });
-    }
+  }
   });
 
   return (

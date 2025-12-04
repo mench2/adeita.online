@@ -136,25 +136,25 @@ export function createLocalMedia() {
       // Определяем качество видео на основе выбранного пресета
       if (qualityPreset === 'auto') {
         // Автоматическое качество на основе количества участников
-        if (participantCount >= 4) {
-          videoConstraints = {
-            width: { ideal: 480, max: 640 },
-            height: { ideal: 360, max: 480 },
-            frameRate: { ideal: 15, max: 20 },
-            facingMode: { ideal: 'user' }
-          };
-        } else if (participantCount >= 3) {
-          videoConstraints = {
-            width: { ideal: 640, max: 800 },
-            height: { ideal: 480, max: 600 },
-            frameRate: { ideal: 20, max: 25 },
-            facingMode: { ideal: 'user' }
-          };
-        } else {
-          videoConstraints = {
-            width: { ideal: 1280, max: 1920 },
-            height: { ideal: 720, max: 1080 },
-            frameRate: { ideal: 30, max: 30 },
+      if (participantCount >= 4) {
+        videoConstraints = {
+          width: { ideal: 480, max: 640 },
+          height: { ideal: 360, max: 480 },
+          frameRate: { ideal: 15, max: 20 },
+          facingMode: { ideal: 'user' }
+        };
+      } else if (participantCount >= 3) {
+        videoConstraints = {
+          width: { ideal: 640, max: 800 },
+          height: { ideal: 480, max: 600 },
+          frameRate: { ideal: 20, max: 25 },
+          facingMode: { ideal: 'user' }
+        };
+      } else {
+        videoConstraints = {
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          frameRate: { ideal: 30, max: 30 },
             facingMode: { ideal: 'user' }
           };
         }

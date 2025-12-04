@@ -12,9 +12,9 @@ export const [peers, setPeers] = createSignal<Map<string, Peer>>(new Map());
 
 export function addPeer(peerId: string, peer: Peer) {
   batch(() => {
-    const map = new Map(peers());
-    map.set(peerId, peer);
-    setPeers(map);
+  const map = new Map(peers());
+  map.set(peerId, peer);
+  setPeers(map);
   });
 }
 
@@ -36,9 +36,9 @@ export function removePeer(peerId: string) {
         console.warn('Error closing peer connection:', e);
       }
     }
-    const map = new Map(peers());
-    map.delete(peerId);
-    setPeers(map);
+  const map = new Map(peers());
+  map.delete(peerId);
+  setPeers(map);
   });
 }
 
@@ -77,7 +77,7 @@ export function clearPeers() {
         console.warn(`Error closing peer ${peerId}:`, e);
       }
     }
-    setPeers(new Map());
+  setPeers(new Map());
   });
 }
 

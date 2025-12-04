@@ -12,3 +12,9 @@ solid-app/dist/
 # OS
 .DS_Store
 *.log
+
+# Documentation (local only)
+SERVER_MAINTENANCE.md
+QUICK_SERVER_COMMANDS.md
+SERVER_OPTIMIZATION_REPORT.md
+VPN_CONFIG.md

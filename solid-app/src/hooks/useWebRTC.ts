@@ -53,7 +53,7 @@ export function createPeerConnection(peerId: string, localStream: MediaStream | 
           if (peersStore.hasPeer(peerId)) {
             const peer = peersStore.getPeer(peerId);
             if (peer && peer.pc.connectionState === 'disconnected') {
-              removePeer(peerId);
+        removePeer(peerId);
             }
           }
         }, 2000);
@@ -93,7 +93,7 @@ export function createPeerConnection(peerId: string, localStream: MediaStream | 
           const peer = peersStore.getPeer(peerId);
           if (peer && peer.pc.connectionState === 'disconnected') {
             console.log(`Removing peer ${peerId} after disconnect timeout`);
-            removePeer(peerId);
+      removePeer(peerId);
           }
         }
       }, 3000);
@@ -111,7 +111,7 @@ export function createPeerConnection(peerId: string, localStream: MediaStream | 
             await callPeerWithRetry(peerId, 1);
           } catch (error) {
             console.error(`Failed to reconnect ${peerId}:`, error);
-            removePeer(peerId);
+      removePeer(peerId);
           }
         }
       }, 2000);

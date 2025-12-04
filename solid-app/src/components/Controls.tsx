@@ -51,7 +51,7 @@ export default function Controls(props: {
       setShowQualityMenu(false);
     } else {
       openSettingsMenu();
-    }
+  }
   };
 
   const toggleQualityMenu = () => {
@@ -137,17 +137,17 @@ export default function Controls(props: {
             <div class="settings-submenu" id="settingsSubmenu" ref={settingsSubmenu}>
               <Show when={!showQualityMenu()}>
                 <button class={`settings-pill ${appStore.isScreenSharing() ? 'active' : ''}`} id="transBtn" ref={transBtn} onClick={props.onToggleScreenShare}>
-                  <img src="/icon/screen_share_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Screen Share" width="20" height="20" />
-                  <span>{appStore.isScreenSharing() ? 'Stop' : 'Trans'}</span>
-                </button>
+                <img src="/icon/screen_share_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Screen Share" width="20" height="20" />
+                <span>{appStore.isScreenSharing() ? 'Stop' : 'Trans'}</span>
+              </button>
                 <button class={`settings-pill ${props.flashlightEnabled ? 'active' : ''}`} id="flashlightToggle" ref={flashlightBtn} onClick={props.onToggleFlashlight}>
-                  <img src="/icon/flashlight_on_24dp_345D2F_FILL0_wght400_GRAD0_opsz24.svg" alt="Flashlight" width="20" height="20" />
+                <img src="/icon/flashlight_on_24dp_345D2F_FILL0_wght400_GRAD0_opsz24.svg" alt="Flashlight" width="20" height="20" />
                   <span>{props.flashlightEnabled ? 'OFF' : 'ON'}</span>
-                </button>
-                <button class="settings-pill" id="swapCameraBtn" onClick={props.onSwapCamera}>
-                  <img src="/icon/cameraswitch_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Swap Camera" width="20" height="20" />
-                  <span>Swap</span>
-                </button>
+              </button>
+              <button class="settings-pill" id="swapCameraBtn" onClick={props.onSwapCamera}>
+                <img src="/icon/cameraswitch_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg" alt="Swap Camera" width="20" height="20" />
+                <span>Swap</span>
+              </button>
                 <button class={`settings-pill ${appStore.noiseSuppressionEnabled() ? 'active' : ''}`} onClick={props.onToggleNoiseSuppression}>
                   <span class="icon">🎙️</span>
                   <span>Шумоподавление</span>

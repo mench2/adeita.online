@@ -48,11 +48,11 @@ export default function NameModal() {
           return;
         }
       } else {
-        socket?.emit('chat-message', {
-          author: n,
-          text: pending,
-          timestamp: new Date()
-        });
+      socket?.emit('chat-message', {
+        author: n,
+        text: pending,
+        timestamp: new Date()
+      });
       }
       appStore.addChatMessage(n, pending, true);
       appStore.setPendingChatText(null);
