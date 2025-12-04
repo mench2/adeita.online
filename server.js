@@ -334,6 +334,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 setInterval(checkInactiveUsers, INACTIVITY_CHECK_INTERVAL);
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Adeita Vichat listening on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Adeita Vichat listening on http://0.0.0.0:${PORT}`);
 });
